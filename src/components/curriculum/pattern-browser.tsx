@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 import { ItemDetail } from "@/components/curriculum/item-detail";
 import { ItemNav } from "@/components/curriculum/item-nav";
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
+import { StageBadge } from "@/components/curriculum/stage-badge";
 import { itemLabel } from "@/lib/curriculum/display";
 import { getNeighbours } from "@/lib/curriculum/navigation";
 import { PATTERN_SETS } from "@/lib/curriculum/patterns";
@@ -26,7 +27,10 @@ import { cn } from "@/lib/utils";
  */
 
 export interface PatternBrowserProps {
-  unit: Pick<Unit, "id" | "title" | "kind" | "description" | "patternSet">;
+  unit: Pick<
+    Unit,
+    "id" | "title" | "kind" | "description" | "patternSet" | "stage"
+  >;
   items: ContentItem[];
   showHeader?: boolean;
   className?: string;
@@ -82,6 +86,7 @@ export function PatternBrowser({
     <div className={cn("flex flex-col gap-8", className)}>
       {showHeader && (
         <header className="flex flex-col items-center gap-2 text-center">
+          {unit.stage && <StageBadge stage={unit.stage} />}
           <h1 className="font-heading text-3xl font-bold sm:text-4xl">
             {unit.title}
           </h1>

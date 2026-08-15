@@ -1,8 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap, LayoutDashboard, Library, Settings } from "lucide-react";
+import {
+  ChevronRight,
+  GraduationCap,
+  LayoutDashboard,
+  Library,
+  Settings,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -20,6 +27,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import type { Unit } from "@/lib/curriculum/types";
+import { cn } from "@/lib/utils";
 
 /**
  * App-wide side panel.
@@ -35,6 +43,13 @@ export interface AppSidebarProps {
 export function AppSidebar({ units }: AppSidebarProps) {
   const pathname = usePathname();
   const isCurrent = (href: string) => pathname === href;
+
+  // A unit opens itself when you are anywhere inside it, and stays wherever
+  // you last put it after that. Seven units with four sheets apiece is more
+  // than fits on screen, so only the one being worked on is expanded.
+  const [openUnits, setOpenUnits] = useState<Record<string, boolean>>({});
+  const isUnitOpen = (unit: AppSidebarProps["units"][number]) =>
+    openUnits[unit.id] ?? pathname.startsWith(`/curriculum/${unit.slug}`);
 
   return (
     <Sidebar collapsible="icon">
@@ -83,18 +98,47 @@ export function AppSidebar({ units }: AppSidebarProps) {
                       const unitHref = `/curriculum/${unit.slug}`;
                       const worksheets = worksheetsFor(unit, unitHref);
 
+                      const name = navUnitName(unit.title);
+                      const open = isUnitOpen(unit);
+
                       return (
                         <SidebarMenuSubItem key={unit.id}>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={isCurrent(unitHref)}
-                          >
-                            <Link href={unitHref}>
-                              <span>{navUnitName(unit.title)}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
+                          <div className="flex items-center">
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={isCurrent(unitHref)}
+                              className="flex-1"
+                            >
+                              <Link href={unitHref}>
+                                <span>{name}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
 
-                          {worksheets.length > 0 && (
+                            {worksheets.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenUnits((current) => ({
+                                    ...current,
+                                    [unit.id]: !open,
+                                  }))
+                                }
+                                aria-expanded={open}
+                                aria-label={`${open ? "Hide" : "Show"} ${name} worksheets`}
+                                className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                              >
+                                <ChevronRight
+                                  className={cn(
+                                    "size-3.5 motion-safe:transition-transform",
+                                    open && "rotate-90",
+                                  )}
+                                  aria-hidden
+                                />
+                              </button>
+                            )}
+                          </div>
+
+                          {open && worksheets.length > 0 && (
                             <SidebarMenuSub>
                               {worksheets.map((worksheet) => (
                                 <SidebarMenuSubItem key={worksheet.href}>
@@ -183,8 +227,10 @@ function worksheetsFor(unit: AppSidebarProps["units"][number], unitHref: string)
       ];
     // A pattern unit teaches words rather than letters, so it offers the
     // letter-identifying sheet only when it says which letters it is about.
-    case "word_patterns":
-      return unit.letterGroup
+    case "word_patterns": {
+      // The letter-identifying sheet only makes sense where the unit says
+      // which letters it is about; the pattern sheets suit any of them.
+      const sheets = unit.letterGroup
         ? [
             {
               href: `${unitHref}/worksheet/identify`,
@@ -192,6 +238,23 @@ function worksheetsFor(unit: AppSidebarProps["units"][number], unitHref: string)
             },
           ]
         : [];
+      const n = sheets.length;
+      return [
+        ...sheets,
+        {
+          href: `${unitHref}/worksheet/pattern-match`,
+          label: `W${n + 1}: Match pictures`,
+        },
+        {
+          href: `${unitHref}/worksheet/pattern-write`,
+          label: `W${n + 2}: Write the letters`,
+        },
+        {
+          href: `${unitHref}/worksheet/fluency`,
+          label: `W${n + 3}: Read the words`,
+        },
+      ];
+    }
     case "phonics": {
       // A phonics unit names its sheets after the letters it covers, so a
       // vowels unit reads "Matching Vowels", not "Matching Consonants".

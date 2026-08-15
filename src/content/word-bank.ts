@@ -31,34 +31,34 @@
  */
 export const CVC_WORDS: string[] = [
   // b
-  "bag", "bat", "bed", "bin", "box", "bug", "bun", "bus",
+  "bag", "bat", "bed", "bin", "bit", "box", "bud", "bug", "bun", "bus",
   // c
-  "cab", "can", "cap", "cat", "cup", "cut",
+  "cab", "can", "cap", "cat", "cob", "cub", "cup", "cut",
   // d
-  "dad", "dam", "dig", "dog", "dot",
+  "dad", "dig", "dog", "dot",
   // f
-  "fan", "fog", "fox",
+  "fan", "fit", "fix", "fog", "fox",
   // g
   // No "gem": its g is soft, and every other g in this list is hard.
   "gas", "gum",
   // h
-  "hat", "hen", "hop", "hot", "hug", "hut",
+  "hat", "hen", "hit", "hop", "hot", "hug", "hum", "hut",
   // j
-  "jab", "jam", "jet", "jog", "jug",
+  "jab", "jam", "jet", "job", "jog", "jug",
   // k
   "kid", "kit",
   // l
-  "lab", "lap", "leg", "lid", "lip", "log",
+  "lap", "leg", "lid", "lip", "log",
   // m
-  "mad", "man", "map", "mat", "men", "mop", "mud", "mug",
+  "mad", "man", "map", "mat", "men", "mix", "mop", "mud", "mug",
   // n
   "nap", "net", "nut",
   // p
-  "pad", "pan", "peg", "pen", "pet", "pin", "pot", "pup",
+  "pad", "pan", "peg", "pen", "pet", "pin", "pit", "pot", "pup",
   // r
-  "rag", "ram", "rat", "red", "rug", "run",
+  "rag", "ram", "rat", "red", "rub", "rug", "run",
   // s
-  "sad", "six", "sob", "sun",
+  "sad", "sit", "six", "sob", "sum", "sun",
   // t
   "tag", "tap", "ten", "tin", "tub",
   // v
@@ -66,16 +66,14 @@ export const CVC_WORDS: string[] = [
   // w
   "wax", "web", "wet", "wig", "win",
   // y
-  "yes",
+  "yam", "yes",
   // z
   "zip",
 ];
 
 export const VOWEL_TEAM_CATEGORIES = [
-  "magic_e",
   "long_vowel",
   "diphthong",
-  "double_o",
   "y_vowel",
 ] as const;
 
@@ -95,11 +93,11 @@ export interface VowelTeamWord {
  * gives a parser nothing to go on: "cake", "rain" and "day" all say long a,
  * and "snow" and "cow" spell two different sounds the same way.
  *
- * The three categories are three different lessons:
+ * The categories are separate lessons:
  *
- *   magic_e     a silent e at the end reaches back and makes the vowel say
- *               its name — every word here ends vowel, consonant, e;
- *   long_vowel  two vowels together where the first says its name;
+ *   long_vowel  the vowel says its name. Either two vowels together, or the
+ *               VCe pattern, where a silent e at the end reaches back over one
+ *               consonant to do the same job;
  *   diphthong   two vowels that glide from one sound into another, which is
  *               why "oi" and "ou" cannot be sounded out as a single held note.
  *
@@ -110,65 +108,65 @@ export interface VowelTeamWord {
  * taught in, and the order the unit shows them.
  */
 export const VOWEL_TEAM_WORDS: VowelTeamWord[] = [
-  // --- Magic e ---
-  { word: "cake", category: "magic_e", pattern: "a_e" },
-  { word: "cane", category: "magic_e", pattern: "a_e" },
-  { word: "cape", category: "magic_e", pattern: "a_e" },
-  { word: "game", category: "magic_e", pattern: "a_e" },
-  { word: "gate", category: "magic_e", pattern: "a_e" },
-  { word: "grape", category: "magic_e", pattern: "a_e" },
-  { word: "lake", category: "magic_e", pattern: "a_e" },
-  { word: "name", category: "magic_e", pattern: "a_e" },
-  { word: "plane", category: "magic_e", pattern: "a_e" },
-  { word: "plate", category: "magic_e", pattern: "a_e" },
-  { word: "rake", category: "magic_e", pattern: "a_e" },
-  { word: "scale", category: "magic_e", pattern: "a_e" },
-  { word: "skate", category: "magic_e", pattern: "a_e" },
-  { word: "snake", category: "magic_e", pattern: "a_e" },
-  { word: "tape", category: "magic_e", pattern: "a_e" },
-  { word: "whale", category: "magic_e", pattern: "a_e" },
-  { word: "bike", category: "magic_e", pattern: "i_e" },
-  { word: "bite", category: "magic_e", pattern: "i_e" },
-  { word: "dive", category: "magic_e", pattern: "i_e" },
-  { word: "five", category: "magic_e", pattern: "i_e" },
-  { word: "hide", category: "magic_e", pattern: "i_e" },
-  { word: "hike", category: "magic_e", pattern: "i_e" },
-  { word: "hive", category: "magic_e", pattern: "i_e" },
-  { word: "ice", category: "magic_e", pattern: "i_e" },
-  { word: "kite", category: "magic_e", pattern: "i_e" },
-  { word: "lime", category: "magic_e", pattern: "i_e" },
-  { word: "line", category: "magic_e", pattern: "i_e" },
-  { word: "mice", category: "magic_e", pattern: "i_e" },
-  { word: "nine", category: "magic_e", pattern: "i_e" },
-  { word: "pine", category: "magic_e", pattern: "i_e" },
-  { word: "rice", category: "magic_e", pattern: "i_e" },
-  { word: "ride", category: "magic_e", pattern: "i_e" },
-  { word: "slide", category: "magic_e", pattern: "i_e" },
-  { word: "time", category: "magic_e", pattern: "i_e" },
-  { word: "vine", category: "magic_e", pattern: "i_e" },
-  { word: "white", category: "magic_e", pattern: "i_e" },
-  { word: "bone", category: "magic_e", pattern: "o_e" },
-  { word: "cone", category: "magic_e", pattern: "o_e" },
-  { word: "dome", category: "magic_e", pattern: "o_e" },
-  { word: "globe", category: "magic_e", pattern: "o_e" },
-  { word: "hole", category: "magic_e", pattern: "o_e" },
-  { word: "home", category: "magic_e", pattern: "o_e" },
-  { word: "hose", category: "magic_e", pattern: "o_e" },
-  { word: "mole", category: "magic_e", pattern: "o_e" },
-  { word: "nose", category: "magic_e", pattern: "o_e" },
-  { word: "pole", category: "magic_e", pattern: "o_e" },
-  { word: "rope", category: "magic_e", pattern: "o_e" },
-  { word: "rose", category: "magic_e", pattern: "o_e" },
-  { word: "slope", category: "magic_e", pattern: "o_e" },
-  { word: "stone", category: "magic_e", pattern: "o_e" },
-  { word: "cube", category: "magic_e", pattern: "u_e" },
-  { word: "cute", category: "magic_e", pattern: "u_e" },
-  { word: "flute", category: "magic_e", pattern: "u_e" },
-  { word: "mule", category: "magic_e", pattern: "u_e" },
-  { word: "rule", category: "magic_e", pattern: "u_e" },
-  { word: "tube", category: "magic_e", pattern: "u_e" },
+  // --- VCe: vowel, consonant, silent e ---
+  { word: "cake", category: "long_vowel", pattern: "VCe" },
+  { word: "cane", category: "long_vowel", pattern: "VCe" },
+  { word: "cape", category: "long_vowel", pattern: "VCe" },
+  { word: "game", category: "long_vowel", pattern: "VCe" },
+  { word: "gate", category: "long_vowel", pattern: "VCe" },
+  { word: "grape", category: "long_vowel", pattern: "VCe" },
+  { word: "lake", category: "long_vowel", pattern: "VCe" },
+  { word: "name", category: "long_vowel", pattern: "VCe" },
+  { word: "plane", category: "long_vowel", pattern: "VCe" },
+  { word: "plate", category: "long_vowel", pattern: "VCe" },
+  { word: "rake", category: "long_vowel", pattern: "VCe" },
+  { word: "scale", category: "long_vowel", pattern: "VCe" },
+  { word: "skate", category: "long_vowel", pattern: "VCe" },
+  { word: "snake", category: "long_vowel", pattern: "VCe" },
+  { word: "tape", category: "long_vowel", pattern: "VCe" },
+  { word: "whale", category: "long_vowel", pattern: "VCe" },
+  { word: "bike", category: "long_vowel", pattern: "VCe" },
+  { word: "bite", category: "long_vowel", pattern: "VCe" },
+  { word: "dive", category: "long_vowel", pattern: "VCe" },
+  { word: "five", category: "long_vowel", pattern: "VCe" },
+  { word: "hide", category: "long_vowel", pattern: "VCe" },
+  { word: "hike", category: "long_vowel", pattern: "VCe" },
+  { word: "hive", category: "long_vowel", pattern: "VCe" },
+  { word: "ice", category: "long_vowel", pattern: "VCe" },
+  { word: "kite", category: "long_vowel", pattern: "VCe" },
+  { word: "lime", category: "long_vowel", pattern: "VCe" },
+  { word: "line", category: "long_vowel", pattern: "VCe" },
+  { word: "mice", category: "long_vowel", pattern: "VCe" },
+  { word: "nine", category: "long_vowel", pattern: "VCe" },
+  { word: "pine", category: "long_vowel", pattern: "VCe" },
+  { word: "rice", category: "long_vowel", pattern: "VCe" },
+  { word: "ride", category: "long_vowel", pattern: "VCe" },
+  { word: "slide", category: "long_vowel", pattern: "VCe" },
+  { word: "time", category: "long_vowel", pattern: "VCe" },
+  { word: "vine", category: "long_vowel", pattern: "VCe" },
+  { word: "white", category: "long_vowel", pattern: "VCe" },
+  { word: "bone", category: "long_vowel", pattern: "VCe" },
+  { word: "cone", category: "long_vowel", pattern: "VCe" },
+  { word: "dome", category: "long_vowel", pattern: "VCe" },
+  { word: "globe", category: "long_vowel", pattern: "VCe" },
+  { word: "hole", category: "long_vowel", pattern: "VCe" },
+  { word: "home", category: "long_vowel", pattern: "VCe" },
+  { word: "hose", category: "long_vowel", pattern: "VCe" },
+  { word: "mole", category: "long_vowel", pattern: "VCe" },
+  { word: "nose", category: "long_vowel", pattern: "VCe" },
+  { word: "pole", category: "long_vowel", pattern: "VCe" },
+  { word: "rope", category: "long_vowel", pattern: "VCe" },
+  { word: "rose", category: "long_vowel", pattern: "VCe" },
+  { word: "slope", category: "long_vowel", pattern: "VCe" },
+  { word: "stone", category: "long_vowel", pattern: "VCe" },
+  { word: "cube", category: "long_vowel", pattern: "VCe" },
+  { word: "cute", category: "long_vowel", pattern: "VCe" },
+  { word: "flute", category: "long_vowel", pattern: "VCe" },
+  { word: "mule", category: "long_vowel", pattern: "VCe" },
+  { word: "rule", category: "long_vowel", pattern: "VCe" },
+  { word: "tube", category: "long_vowel", pattern: "VCe" },
 
-  // --- Long vowels ---
+  // --- Two vowels together ---
   { word: "chain", category: "long_vowel", pattern: "ai" },
   { word: "mail", category: "long_vowel", pattern: "ai" },
   { word: "nail", category: "long_vowel", pattern: "ai" },
@@ -217,24 +215,17 @@ export const VOWEL_TEAM_WORDS: VowelTeamWord[] = [
   { word: "blue", category: "long_vowel", pattern: "ue" },
   { word: "glue", category: "long_vowel", pattern: "ue" },
 
-  // --- Double o: one spelling, two sounds, named after their exemplars ---
-  { word: "boot", category: "double_o", pattern: "moon" },
-  { word: "broom", category: "double_o", pattern: "moon" },
-  { word: "food", category: "double_o", pattern: "moon" },
-  { word: "moon", category: "double_o", pattern: "moon" },
-  { word: "pool", category: "double_o", pattern: "moon" },
-  { word: "roof", category: "double_o", pattern: "moon" },
-  { word: "spoon", category: "double_o", pattern: "moon" },
-  { word: "tooth", category: "double_o", pattern: "moon" },
-  { word: "zoo", category: "double_o", pattern: "moon" },
-  { word: "book", category: "double_o", pattern: "book" },
-  { word: "cook", category: "double_o", pattern: "book" },
-  { word: "foot", category: "double_o", pattern: "book" },
-  { word: "good", category: "double_o", pattern: "book" },
-  { word: "hook", category: "double_o", pattern: "book" },
-  { word: "look", category: "double_o", pattern: "book" },
-  { word: "wood", category: "double_o", pattern: "book" },
-  { word: "wool", category: "double_o", pattern: "book" },
+  // The long oo of "moon". Its short twin, the oo of "book", is a short vowel
+  // and lives with them — see SHORT_OO_WORDS.
+  { word: "boot", category: "long_vowel", pattern: "oo" },
+  { word: "broom", category: "long_vowel", pattern: "oo" },
+  { word: "food", category: "long_vowel", pattern: "oo" },
+  { word: "moon", category: "long_vowel", pattern: "oo" },
+  { word: "pool", category: "long_vowel", pattern: "oo" },
+  { word: "roof", category: "long_vowel", pattern: "oo" },
+  { word: "spoon", category: "long_vowel", pattern: "oo" },
+  { word: "tooth", category: "long_vowel", pattern: "oo" },
+  { word: "zoo", category: "long_vowel", pattern: "oo" },
 
   // --- y doing a vowel's job, at the end of a word ---
   { word: "cry", category: "y_vowel", pattern: "sky" },
@@ -267,6 +258,34 @@ export const VOWEL_TEAM_WORDS: VowelTeamWord[] = [
   { word: "crown", category: "diphthong", pattern: "ow" },
   { word: "owl", category: "diphthong", pattern: "ow" },
   { word: "town", category: "diphthong", pattern: "ow" },
+];
+
+export interface ShortOoWord {
+  word: string;
+  /** The rime it shares, e.g. "ook" for book. */
+  family: string;
+}
+
+/**
+ * The short oo of "book" — /ʊ/, not the /uː/ of "moon".
+ *
+ * A held, short sound, so it sits with the short vowels rather than with the
+ * vowel teams. It is not short u, though: "book" and "cup" do not rhyme, which
+ * is why it gets a button of its own beside a, e, i, o and u rather than being
+ * filed under one of them.
+ */
+export const SHORT_OO_WORDS: ShortOoWord[] = [
+  { word: "book", family: "ook" },
+  { word: "cook", family: "ook" },
+  { word: "hook", family: "ook" },
+  { word: "look", family: "ook" },
+  { word: "took", family: "ook" },
+  { word: "good", family: "ood" },
+  { word: "hood", family: "ood" },
+  { word: "stood", family: "ood" },
+  { word: "wood", family: "ood" },
+  { word: "foot", family: "oot" },
+  { word: "wool", family: "ool" },
 ];
 
 export interface BlendGroup {
@@ -374,7 +393,16 @@ export const R_CONTROLLED_GROUPS: RControlledGroup[] = [
       "storm", "torch",
     ],
   },
-  { pattern: "er", words: ["fern", "her", "herd", "perch"] },
+  // Children meet "er" at the end of a word far more often than inside one,
+  // so this group is the two-syllable case. It is the first place in the
+  // course where a word has more than one beat.
+  {
+    pattern: "er",
+    words: [
+      "her", "tiger", "water", "farmer", "flower", "ladder", "letter",
+      "sister",
+    ],
+  },
   {
     pattern: "ir",
     words: ["bird", "dirt", "first", "girl", "shirt", "skirt", "third"],
@@ -441,7 +469,9 @@ export const DIGRAPH_GROUPS: DigraphGroup[] = [
   {
     digraph: "wh",
     position: "start",
-    words: ["whip", "whisk", "whisker"],
+    // "whip" is out: it reads as the thing you hit with. "when" and "which"
+    // carry the sound and are two of the commonest words a child will meet.
+    words: ["when", "which", "whisk", "whisker"],
   },
   {
     digraph: "ch",

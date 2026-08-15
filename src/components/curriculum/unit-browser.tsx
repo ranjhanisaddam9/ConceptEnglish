@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 import { ItemDetail } from "@/components/curriculum/item-detail";
 import { ItemNav } from "@/components/curriculum/item-nav";
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
+import { StageBadge } from "@/components/curriculum/stage-badge";
 import { useLabelMode } from "@/hooks/use-preferences";
 import { itemLabel, labelModeOptions } from "@/lib/curriculum/display";
 import {
@@ -28,7 +29,7 @@ import { cn } from "@/lib/utils";
  */
 
 export interface UnitBrowserProps {
-  unit: Pick<Unit, "id" | "title" | "kind" | "description">;
+  unit: Pick<Unit, "id" | "title" | "kind" | "description" | "stage">;
   items: ContentItem[];
   /** Controlled selection. Omit to let the component manage it. */
   selectedItemId?: string | null;
@@ -139,6 +140,7 @@ export function UnitBrowser({
     <div className={cn("flex flex-col gap-8", className)}>
       {showHeader && (
         <header className="flex flex-col items-center gap-2 text-center">
+          {unit.stage && <StageBadge stage={unit.stage} />}
           <h1 className="font-heading text-3xl font-bold sm:text-4xl">
             {unit.title}
           </h1>

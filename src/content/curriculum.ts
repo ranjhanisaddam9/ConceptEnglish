@@ -32,6 +32,7 @@ import {
   DIGRAPH_GROUPS,
   FINAL_BLEND_GROUPS,
   R_CONTROLLED_GROUPS,
+  SHORT_OO_WORDS,
   VOWEL_TEAM_CATEGORIES,
   VOWEL_TEAM_WORDS,
 } from "./word-bank";
@@ -155,6 +156,11 @@ function buildPatternItem(
   words: string[],
   /** What the sound button says. Defaults to the label. */
   speechText = label,
+  /**
+   * Long form of the pattern, shown on the card where the navigator's label is
+   * shorthand — "VCe" on the button, "Vowel + Consonant + e" on the card.
+   */
+  expanded?: string,
 ): ContentItem {
   const itemId = `${unitId}-${pattern}-${key}`;
 
@@ -162,8 +168,7 @@ function buildPatternItem(
     id: itemId,
     unitId,
     primaryLabel: label,
-    // A pattern has no second form, so no case toggle is offered.
-    secondaryLabel: null,
+    secondaryLabel: expanded ?? null,
     illustrationUrl: null,
     audioUrl: null,
     speechText,
@@ -183,6 +188,19 @@ function buildPatternItem(
 }
 
 /**
+ * Fewest words a family needs to earn a place in the unit.
+ *
+ * A family of one cannot do the thing a family is for — swap the opening sound
+ * and read a new word — so "-eb" with only "web" in it is a word card wearing
+ * a family's clothes. Those words keep their place in the word bank.
+ */
+const MIN_FAMILY_SIZE = 2;
+
+function countInFamily(words: CvcWord[], family: string): number {
+  return words.filter((word) => word.family === family).length;
+}
+
+/**
  * The short-vowel unit: one item per word family.
  *
  * Each family is tagged with its vowel, which is what the unit's control picks
@@ -194,9 +212,11 @@ function buildCvcItems(unitId: string): ContentItem[] {
     (word): word is CvcWord => word !== null,
   );
 
-  const families = [...new Set(words.map((word) => word.family))].sort();
+  const families = [...new Set(words.map((word) => word.family))]
+    .filter((family) => countInFamily(words, family) >= MIN_FAMILY_SIZE)
+    .sort();
 
-  return families.map((family, index) =>
+  const cvcItems = families.map((family, index) =>
     buildPatternItem(
       unitId,
       `vowel-${family[0]}`,
@@ -210,6 +230,33 @@ function buildCvcItems(unitId: string): ContentItem[] {
       family,
     ),
   );
+
+  // The short oo of "book" joins them under a button of its own. Its words are
+  // four letters rather than three, so they carry their family rather than
+  // having it parsed out.
+  const ooFamilies = [...new Set(SHORT_OO_WORDS.map((entry) => entry.family))]
+    .filter(
+      (family) =>
+        SHORT_OO_WORDS.filter((entry) => entry.family === family).length >=
+        MIN_FAMILY_SIZE,
+    )
+    .sort();
+
+  const ooItems = ooFamilies.map((family, index) =>
+    buildPatternItem(
+      unitId,
+      "vowel-oo",
+      family,
+      `-${family}`,
+      index + 1,
+      SHORT_OO_WORDS.filter((entry) => entry.family === family)
+        .map((entry) => entry.word)
+        .sort(),
+      family,
+    ),
+  );
+
+  return [...cvcItems, ...ooItems];
 }
 
 /** The consonants a word opens with, e.g. "pl" for "plate". */
@@ -218,17 +265,20 @@ function openingConsonants(word: string): string {
 }
 
 /**
- * Orders a magic-e group: by the consonant the word opens with, then by the
- * consonant sitting between the vowel and the silent e.
+ * Orders the VCe group: by vowel, then by the consonant sitting between the
+ * vowel and the silent e, then by the consonant the word opens with.
  *
- * The vowel is already fixed — it is what the group is — so that leg of the
- * sort is handled by the grouping itself. Reading down a column, "cake, lake,
- * rake, snake" then "gate, plate, skate" shows the two things that vary.
+ * All three legs are read off the word rather than stored, since a VCe word is
+ * exactly vowel-consonant-e at its end. Sorting this way gathers the rhyming
+ * runs — "cake, lake, rake, snake" then "gate, plate, skate" — which is what
+ * makes the pattern visible down the column.
  */
-function sortMagicE(words: string[]): string[] {
+function sortVce(words: string[]): string[] {
+  const vowel = (word: string) => "aeiou".indexOf(word.at(-3) ?? "");
   const beforeE = (word: string) => word.at(-2) ?? "";
   return [...words].sort(
     (a, b) =>
+      vowel(a) - vowel(b) ||
       beforeE(a).localeCompare(beforeE(b)) ||
       openingConsonants(a).localeCompare(openingConsonants(b)) ||
       a.localeCompare(b),
@@ -236,11 +286,11 @@ function sortMagicE(words: string[]): string[] {
 }
 
 /**
- * The vowel-teams unit: three categories, each holding its own patterns.
+ * The vowel-teams unit: each category holding its own patterns.
  *
- * Unlike the other pattern units these are not cuts of one list — a word is
- * either a magic-e word or a vowel-team word, never both — so the toggle picks
- * a lesson rather than a viewpoint.
+ * Unlike the other pattern units these are not cuts of one list — a word
+ * belongs to one pattern only — so the toggle picks a lesson rather than a
+ * viewpoint.
  */
 function buildVowelTeamItems(unitId: string): ContentItem[] {
   return VOWEL_TEAM_CATEGORIES.flatMap((category) => {
@@ -259,9 +309,10 @@ function buildVowelTeamItems(unitId: string): ContentItem[] {
         pattern,
         pattern,
         index + 1,
-        category === "magic_e" ? sortMagicE(members) : [...members].sort(),
-        // "a_e" would be read out letter by letter; the vowel is the sound.
-        category === "magic_e" ? pattern[0] : pattern,
+        pattern === "VCe" ? sortVce(members) : [...members].sort(),
+        // "VCe" spelled out is meaningless aloud; the rule has a name.
+        pattern === "VCe" ? "magic e" : pattern,
+        pattern === "VCe" ? "Vowel + Consonant + e" : undefined,
       );
     });
   });
@@ -407,9 +458,10 @@ export const CURRICULUM: UnitWithItems[] = [
     id: "unit-1",
     title: "Unit 1 · Letters",
     slug: "unit-1",
+    stage: "Kindergarten",
     kind: "letters",
     description:
-      "Letter recognition, letter sounds, and three example words for every letter.",
+      "Where reading starts. Every letter, the sound it makes, and three words that begin with it.",
     orderIndex: 1,
     isPublished: true,
     items: buildLetterItems("unit-1"),
@@ -418,9 +470,11 @@ export const CURRICULUM: UnitWithItems[] = [
     id: "unit-2",
     title: "Unit 2 · Consonants",
     slug: "unit-2",
+    stage: "Kindergarten",
     kind: "phonics",
     letterGroup: "consonant",
-    description: "The twenty-one consonants and the sounds they make.",
+    description:
+      "The twenty-one consonants on their own. A check on what Unit 1 taught, rather than new ground.",
     orderIndex: 2,
     isPublished: true,
     items: buildLetterItems("unit-2", "consonant"),
@@ -429,13 +483,14 @@ export const CURRICULUM: UnitWithItems[] = [
     id: "unit-3",
     title: "Unit 3 · Vowels",
     slug: "unit-3",
+    stage: "Kindergarten",
     kind: "word_patterns",
     patternSet: "short_vowels",
     // Names the group of letters the unit is about, which is what its
     // letter-identifying worksheet targets.
     letterGroup: "vowel",
     description:
-      "Three-letter words. Pick a vowel to see the word families it makes.",
+      "The first real reading. Pick a vowel and see the families it builds — change the front sound, read a new word.",
     orderIndex: 3,
     isPublished: true,
     items: buildCvcItems("unit-3"),
@@ -444,10 +499,11 @@ export const CURRICULUM: UnitWithItems[] = [
     id: "unit-4",
     title: "Unit 4 · Consonant Digraph",
     slug: "unit-4",
+    stage: "Kindergarten",
     kind: "word_patterns",
     patternSet: "digraphs",
     description:
-      "Two consonants making one new sound, at the start of a word and at the end.",
+      "The first time letters stop saying what they say alone: two consonants, one new sound.",
     orderIndex: 4,
     isPublished: true,
     items: buildDigraphItems("unit-4"),
@@ -456,10 +512,11 @@ export const CURRICULUM: UnitWithItems[] = [
     id: "unit-5",
     title: "Unit 5 · Consonant Blends",
     slug: "unit-5",
+    stage: "Grade 1",
     kind: "word_patterns",
     patternSet: "blends",
     description:
-      "Two consonants at the start of a word, with both sounds still heard.",
+      "Two consonants run together with both sounds still heard — at the start of a word, and at the end.",
     orderIndex: 5,
     isPublished: true,
     items: buildBlendItems("unit-5"),
@@ -468,10 +525,11 @@ export const CURRICULUM: UnitWithItems[] = [
     id: "unit-6",
     title: "Unit 6 · Vowel Teams",
     slug: "unit-6",
+    stage: "Grade 1",
     kind: "word_patterns",
     patternSet: "vowel_teams",
     description:
-      "Where more than one letter makes the vowel sound: a silent e, a pair holding one sound, and a pair that glides between two.",
+      "The vowel says its name. A silent e reaching back, two vowels holding one sound, and two that glide.",
     orderIndex: 6,
     isPublished: true,
     items: buildVowelTeamItems("unit-6"),
@@ -480,10 +538,11 @@ export const CURRICULUM: UnitWithItems[] = [
     id: "unit-7",
     title: "Unit 7 · R-Controlled Vowels",
     slug: "unit-7",
+    stage: "Grade 1",
     kind: "word_patterns",
     patternSet: "r_controlled",
     description:
-      "An r after the vowel changes the sound it makes — neither short nor long.",
+      "The last of the single-syllable patterns. An r after the vowel changes it — neither short nor long.",
     orderIndex: 7,
     isPublished: true,
     items: buildRControlledItems("unit-7"),

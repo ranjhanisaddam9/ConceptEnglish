@@ -65,6 +65,9 @@ export function ItemDetail({
 }: ItemDetailProps) {
   const glyph = itemLabel(item, mode);
   const examples = item.examples;
+  // A pattern unit can name itself twice: "VCe" on the navigator button, where
+  // space is tight, and the long form here where there is room to say it.
+  const cardGlyph = item.secondaryLabel?.trim() || glyph;
   // Phonics works through the same alphabet, so it gets the writing ruling
   // and the "words that start with" heading too.
   const isLetters = kind === "letters" || kind === "phonics";
@@ -102,7 +105,10 @@ export function ItemDetail({
               {badge}
             </p>
           )}
-          <div className="flex items-center gap-5 sm:gap-7">
+          {/* Stacked on a phone: side by side, the sound button leaves the
+              glyph about seventy pixels, which is narrower than the shortest
+              pattern name. */}
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-7">
           {isLetters ? (
             <WritingLines
               text={glyph}
@@ -111,10 +117,22 @@ export function ItemDetail({
             />
           ) : (
             <div
-              className="font-letter grid h-40 flex-1 place-items-center rounded-2xl text-7xl leading-none font-bold text-neutral-900/80 select-none sm:h-48 sm:text-8xl"
+              // min-w-0 so the tile may shrink inside the row rather than
+              // pushing the card wider than a phone screen.
+              className="font-letter grid h-40 w-full min-w-0 place-items-center rounded-2xl px-3 text-center font-bold text-neutral-900/80 select-none sm:h-48 sm:flex-1 sm:px-4"
               style={{ backgroundColor: placeholderTint(item.primaryLabel) }}
             >
-              {glyph}
+              <span
+                className={cn(
+                  // A spelled-out name has to fit the tile; a short pattern
+                  // can fill it.
+                  cardGlyph.length > 6
+                    ? "text-base leading-tight text-balance sm:text-xl md:text-2xl"
+                    : "text-7xl leading-none sm:text-8xl",
+                )}
+              >
+                {cardGlyph}
+              </span>
             </div>
           )}
 

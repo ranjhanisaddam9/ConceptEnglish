@@ -34,8 +34,8 @@ export interface SegmentedToggleProps<T extends string> {
 }
 
 const SIZE_CLASSES = {
-  sm: "h-10 min-w-24 px-4 text-sm",
-  lg: "h-12 min-w-28 px-5 text-base",
+  sm: "h-10 min-w-16 px-4 text-sm sm:min-w-24",
+  lg: "h-12 min-w-20 px-4 text-base sm:min-w-28 sm:px-5",
 } as const;
 
 export function SegmentedToggle<T extends string>({
@@ -50,10 +50,19 @@ export function SegmentedToggle<T extends string>({
   if (options.length < 2) return null;
 
   return (
-    <div className={cn("flex flex-col items-center gap-1.5", className)}>
+    <div
+      className={cn(
+        // max-w-full and the scroller below: a five-option control is wider
+        // than a phone, and a segmented control cannot wrap without its
+        // rounded ends landing mid-row.
+        "flex max-w-full flex-col items-center gap-1.5",
+        className,
+      )}
+    >
       <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         {caption}
       </span>
+      <div className="max-w-full overflow-x-auto px-1 pb-1">
       <ToggleGroup
         type="single"
         value={value}
@@ -85,6 +94,7 @@ export function SegmentedToggle<T extends string>({
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
+      </div>
     </div>
   );
 }

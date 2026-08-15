@@ -33,6 +33,7 @@ export async function listUnits(): Promise<Unit[]> {
         isPublished: unit.isPublished,
         letterGroup: unit.letterGroup,
         patternSet: unit.patternSet,
+        stage: unit.stage,
       }),
     ).sort(byOrderIndex);
   }

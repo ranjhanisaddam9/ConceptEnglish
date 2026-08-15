@@ -54,12 +54,22 @@ export const PATTERN_SETS: Record<PatternSetId, PatternSet> = {
     caption: "Vowel",
     size: "sm",
     reveal: true,
-    options: SHORT_VOWELS.map((vowel) => ({
-      value: `vowel-${vowel}`,
-      label: vowel,
-      description: `Word families with a short ${vowel}`,
-      heading: (label) => `Words in the ${label} family`,
-    })),
+    options: [
+      ...SHORT_VOWELS.map((vowel) => ({
+        value: `vowel-${vowel}`,
+        label: vowel,
+        description: `Word families with a short ${vowel}`,
+        heading: (label: string) => `Words in the ${label} family`,
+      })),
+      // A sixth button, because the oo of "book" is a short vowel sound but is
+      // not short u — "book" and "cup" do not rhyme.
+      {
+        value: "vowel-oo",
+        label: "oo",
+        description: "Word families with the short oo of book",
+        heading: (label: string) => `Words in the ${label} family`,
+      },
+    ],
   },
   // Three separate lessons rather than two cuts of one list: a silent e, a
   // pair of vowels holding one sound, and a pair that glides between two.
@@ -67,15 +77,10 @@ export const PATTERN_SETS: Record<PatternSetId, PatternSet> = {
     caption: "Pattern",
     options: [
     {
-      value: "magic_e",
-      label: "Magic E",
-      description: "A silent e at the end makes the vowel say its name",
-      heading: (label) => `Words with ${label}`,
-    },
-    {
       value: "long_vowel",
       label: "Long Vowel",
-      description: "Two vowels together, the first saying its name",
+      description:
+        "The vowel says its name — two vowels together, or a silent e at the end",
       heading: (label) => `Words with ${label}`,
     },
     {
@@ -84,14 +89,8 @@ export const PATTERN_SETS: Record<PatternSetId, PatternSet> = {
       description: "Two vowels gliding from one sound into another",
       heading: (label) => `Words with ${label}`,
     },
-    // Both of these spell two sounds the same way, so the groups are named
-    // after a word a child already knows rather than after the letters.
-    {
-      value: "double_o",
-      label: "oo",
-      description: "Two o's, saying either the moon sound or the book sound",
-      heading: (label) => `Words with oo as in ${label}`,
-    },
+    // y spells two sounds, so its groups are named after a word a child
+    // already knows rather than after the letter.
     {
       value: "y_vowel",
       label: "y",

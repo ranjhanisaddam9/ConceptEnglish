@@ -51,6 +51,14 @@ export interface Unit {
    * code while the unit row stays a plain record.
    */
   patternSet?: PatternSetId;
+  /**
+   * Which year the unit is for.
+   *
+   * The course spans two, and the later units are squarely Grade 1 work —
+   * nobody should hand vowel teams to a five-year-old because the app happens
+   * to say "Kindergarten" on the front.
+   */
+  stage?: "Kindergarten" | "Grade 1";
 }
 
 export interface ContentExample {

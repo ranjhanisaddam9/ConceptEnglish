@@ -8,6 +8,7 @@ import {
   DIGRAPH_GROUPS,
   FINAL_BLEND_GROUPS,
   R_CONTROLLED_GROUPS,
+  SHORT_OO_WORDS,
   VOWEL_TEAM_WORDS,
 } from "@/content/word-bank";
 import type { PictureEntry } from "@/lib/curriculum/word-bank";
@@ -30,6 +31,7 @@ function candidateWords(extra: string[]): string[] {
     ...extra,
     ...CVC_WORDS,
     ...VOWEL_TEAM_WORDS.map((word) => word.word),
+    ...SHORT_OO_WORDS.map((entry) => entry.word),
     ...BLEND_GROUPS.flatMap((group) => group.words),
     ...FINAL_BLEND_GROUPS.flatMap((group) => group.words),
     ...R_CONTROLLED_GROUPS.flatMap((group) => group.words),

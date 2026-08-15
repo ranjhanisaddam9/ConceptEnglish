@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { StageBadge } from "@/components/curriculum/stage-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { listUnits } from "@/lib/curriculum/queries";
 
@@ -37,6 +38,7 @@ export default async function CurriculumIndexPage() {
                 >
                   <Card className="h-full transition-shadow hover:shadow-md">
                     <CardHeader>
+                      {unit.stage && <StageBadge stage={unit.stage} />}
                       <CardTitle className="text-2xl">{unit.title}</CardTitle>
                       {unit.description && (
                         <CardDescription>{unit.description}</CardDescription>

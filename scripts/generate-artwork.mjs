@@ -96,6 +96,12 @@ const WORD_ART = {
   // Homes for pictures the letter cards no longer own: "ice" and "whale" are
   // magic-e words, "owl" is a diphthong.
   ice: "🧊", whale: "🐳", owl: "🦉",
+
+  // Words filling out the thin word families. Only the ones a five-year-old
+  // can name from the picture alone — "hit", "sit" and "rub" are actions with
+  // nothing to draw, so they carry a tinted tile instead.
+  fix: "🔧", mix: "🥣", job: "👷", sum: "➕", bud: "🌱", yam: "🍠",
+  ladder: "🪜", farmer: "🧑‍🌾",
   // New blend words.
   cliff: "⛰️", clip: "📎", plug: "🔌",
 

@@ -41,10 +41,10 @@ to seed — editing a word list and reloading is the whole workflow.
 | --- | --- | --- |
 | 1 | Letters | All 26, with three example words each |
 | 2 | Consonants | The 21 consonants |
-| 3 | Vowels | Pick a vowel, see its CVC word families |
+| 3 | Vowels | Pick a vowel — including the short `oo` of "book" — see its families |
 | 4 | Consonant Digraph | `ch sh th wh ck` |
 | 5 | Consonant Blends | Opening blend, final blend, or first letter |
-| 6 | Vowel Teams | Magic e, long vowel, diphthong, `oo`, `y` |
+| 6 | Vowel Teams | Long vowel (`VCe` and the teams), diphthong, `y` |
 | 7 | R-Controlled Vowels | `ar or er ir ur` |
 
 Units 3–7 share one component, `PatternBrowser`. A unit names a *pattern set*
@@ -120,9 +120,32 @@ Push to GitHub and import the repo into Vercel. The build needs no environment
 variables — artwork is committed, and content is compiled in. No git remote is
 configured yet.
 
+Each unit is labelled Kindergarten or Grade 1. Units 1–4 are the Kindergarten
+course; 5–7 are Grade 1, and nobody should hand vowel teams to a five-year-old
+because the front page says Kindergarten.
+
+## Worksheets
+
+Every sheet is laid out in millimetres and prints to A4. Units 1 and 2 have
+letter sheets of their own; Units 3–7 share three built from their patterns:
+
+- **Match pictures** — pictures one side, patterns the other, ruled across.
+- **Write the letters** — the word with its pattern blanked onto ruling. A
+  word-family unit blanks the *front* of the word instead, because swapping the
+  opening sound is what a family teaches.
+- **Read the words** — a grid to read aloud, deliberately without pictures.
+
+Two rules the sheets depend on. Answers are **deranged**, never left level with
+their own picture, or a child can rule straight across without reading. And a
+matching sheet only ever uses words with a real picture file — every item
+carries an `imageUrl` whether or not the file exists, so the truth comes from
+`artworkInventory()` reading the folder, not from the content.
+
 ## Not built yet
 
-- Worksheets for Units 4–7. Units 1 and 2 have three sheets each; Unit 3 has
-  one.
+- **Magic e maker** for Unit 6 — `can → cane`, `tap → tape`, two boxes and a
+  picture each. Needs a new layout and a few word pairs (`hope`, `made`).
+- **Sort sheets** — start/end, short/long, which-sound. Five sheets sharing one
+  two-column layout.
 - The admin shell. `/admin` was specified as a template dashboard for access
   control later, not CRUD.
