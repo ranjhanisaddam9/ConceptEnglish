@@ -61,7 +61,7 @@ function QuestionRow({ question }: { question: MissingQuestion }) {
           <span
             key={index}
             className="font-letter leading-none font-bold"
-            style={{ fontSize: "9mm" }}
+            style={{ fontSize: "9mm", color: cell.colour }}
           >
             {cell.text}
           </span>
@@ -123,7 +123,7 @@ function AlphabetLine({ cells }: { cells: MissingCell[] }) {
             fontWeight={700}
             textAnchor="middle"
             className="font-letter"
-            fill="var(--worksheet-ink)"
+            fill={cell.colour}
           >
             {splitByCase(cell.text).map((run, runIndex) => (
               <tspan

@@ -73,6 +73,20 @@ const DOT_MARK_SIZE = 0.2;
  */
 const DROP_LOWEST_DOT = new Set(["i", "F"]);
 
+/**
+ * Letters that drop the lowest dot on *each* side of their centre.
+ *
+ * An 'A' needs one gone from the foot of each leg. Taking the two lowest dots
+ * overall would not do it: its feet sit at different heights (-0.010em on the
+ * left against -0.065em on the right), and the left leg has a second dot level
+ * with the right foot, so a tie could strip two dots from one leg and none
+ * from the other.
+ *
+ * Only applied to single-letter glyphs — in a paired "Aa" the two halves are
+ * different letters, and the rule would take a dot off the 'a' as well.
+ */
+const DROP_LOWEST_EACH_SIDE = new Set(["A"]);
+
 /** A turn sharper than this counts as a corner and always gets its own dot. */
 const CORNER_ANGLE = (50 * Math.PI) / 180;
 
@@ -701,10 +715,26 @@ function computeDots(request: SkeletonRequest): SkeletonDot[] {
     DROP_LOWEST_DOT.has(letter),
   ).length;
 
-  const ordered =
+  let ordered =
     dropCount > 0
       ? [...kept].sort((a, b) => b[1] - a[1]).slice(dropCount)
       : kept;
+
+  if (DROP_LOWEST_EACH_SIDE.has(request.glyph)) {
+    const lowestOf = (side: Point[]) =>
+      side.reduce<Point | null>(
+        (lowest, point) => (!lowest || point[1] > lowest[1] ? point : lowest),
+        null,
+      );
+
+    const feet = new Set(
+      [
+        lowestOf(ordered.filter(([x]) => x < centreX)),
+        lowestOf(ordered.filter(([x]) => x >= centreX)),
+      ].filter((point): point is Point => point !== null),
+    );
+    ordered = ordered.filter((point) => !feet.has(point));
+  }
 
   return ordered.map(([x, y]) => ({
     x: (x - centreX) / RASTER,

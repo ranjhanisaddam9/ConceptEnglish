@@ -7,11 +7,14 @@
  * `display.ts`, not here.
  */
 
+import type { PatternSetId } from "./patterns";
+
 export const UNIT_KINDS = [
   "letters",
   "numbers",
   "sight_words",
   "phonics",
+  "word_patterns",
   "custom",
 ] as const;
 
@@ -36,6 +39,18 @@ export interface Unit {
   description: string | null;
   orderIndex: number;
   isPublished: boolean;
+  /**
+   * Which letters a unit is about, when it covers only some of them.
+   * Lets navigation and worksheets name and target the right set without
+   * having to load the unit's items first.
+   */
+  letterGroup?: "vowel" | "consonant";
+  /**
+   * For a `word_patterns` unit, which set of patterns it browses — see
+   * `patterns.ts`. Named rather than embedded so the definitions can stay in
+   * code while the unit row stays a plain record.
+   */
+  patternSet?: PatternSetId;
 }
 
 export interface ContentExample {

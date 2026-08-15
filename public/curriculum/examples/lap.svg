@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="lap">
+  <rect width="128" height="128" rx="20" fill="hsl(347 70% 93%)"/>
+  <circle cx="64" cy="62" r="44" fill="hsl(347 75% 97%)"/>
+  
+  <!-- lower leg and foot, behind the body -->
+  <rect x="83" y="82" width="15" height="31" rx="6" fill="#2b5079"/>
+  <rect x="77" y="105" width="27" height="11" rx="5" fill="#3f4a5f"/>
+  <!-- torso: a lighter shirt, so the seated bend is visible against the
+       trousers rather than merging into one blue block -->
+  <rect x="35" y="42" width="27" height="45" rx="10" fill="#5b9ad9"/>
+  <!-- thigh: the lap itself -->
+  <rect x="49" y="70" width="49" height="18" rx="9" fill="#2b5079"/>
+  <!-- head -->
+  <circle cx="48" cy="30" r="13" fill="#f2c6a0"/>
+  <path d="M35 29a13 13 0 0 1 26 0 21 21 0 0 0-26 0Z" fill="#3f4a5f"/>
+  <!-- book resting on the lap, outlined so it lifts off both -->
+  <rect x="57" y="52" width="38" height="18" rx="2" fill="#c9372c"
+    stroke="#fdf6ec" stroke-width="2.5"/>
+  <rect x="60" y="63" width="32" height="5" rx="1.5" fill="#fdf6ec"/>
+  <!-- arm reaching down to the book -->
+  <path d="M58 50 L71 56" stroke="#f2c6a0" stroke-width="9" stroke-linecap="round"/>
+</svg>

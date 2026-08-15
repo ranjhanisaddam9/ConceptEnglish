@@ -155,6 +155,31 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Revealing a navigator one item at a time.
+
+   Used where choosing something changes what the navigator holds — picking a
+   vowel reveals its word families — so the new row reads as an answer to the
+   choice. The per-item delay is set inline as --reveal-delay.
+   --------------------------------------------------------------------------- */
+@keyframes item-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-item-reveal] {
+    animation: item-reveal 260ms ease-out both;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+}
+
+/* ---------------------------------------------------------------------------
    Printing a worksheet.
 
    Everything except the A4 page itself is hidden, and the sidebar shell is

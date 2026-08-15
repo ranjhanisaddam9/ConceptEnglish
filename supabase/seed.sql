@@ -43,11 +43,11 @@ begin
       ( 9, 'I', 'i', array['Igloo', 'Insect', 'Ink']),
       (10, 'J', 'j', array['Jam', 'Jug', 'Jellyfish']),
       (11, 'K', 'k', array['Kite', 'Key', 'Kangaroo']),
-      (12, 'L', 'l', array['Lion', 'Leaf', 'Lamp']),
+      (12, 'L', 'l', array['Lion', 'Leaf', 'Lamb']),
       (13, 'M', 'm', array['Moon', 'Mouse', 'Milk']),
       (14, 'N', 'n', array['Nest', 'Nose', 'Net']),
       (15, 'O', 'o', array['Octopus', 'Orange', 'Ostrich']),
-      (16, 'P', 'p', array['Pig', 'Pencil', 'Panda']),
+      (16, 'P', 'p', array['Parrot', 'Pencil', 'Panda']),
       (17, 'Q', 'q', array['Queen', 'Quilt', 'Question']),
       (18, 'R', 'r', array['Rabbit', 'Rainbow', 'Ring']),
       (19, 'S', 's', array['Sun', 'Star', 'Snake']),
@@ -55,9 +55,9 @@ begin
       (21, 'U', 'u', array['Umbrella', 'Uniform', 'Up']),
       (22, 'V', 'v', array['Van', 'Violin', 'Volcano']),
       (23, 'W', 'w', array['Watch', 'Whale', 'Window']),
-      (24, 'X', 'x', array['Xylophone', 'X-ray', 'Fox']),
-      (25, 'Y', 'y', array['Yak', 'Yo-yo', 'Yellow']),
-      (26, 'Z', 'z', array['Zebra', 'Zip', 'Zoo'])
+      (24, 'X', 'x', array['Xylophone', 'X-ray', 'Xmas tree']),
+      (25, 'Y', 'y', array['Yacht', 'Yo-yo', 'Yolk']),
+      (26, 'Z', 'z', array['Zebra', 'Zip', 'Zigzag'])
     ) as t(idx, upper_label, lower_label, examples)
   loop
     insert into public.content_items (unit_id, primary_label, secondary_label, order_index)

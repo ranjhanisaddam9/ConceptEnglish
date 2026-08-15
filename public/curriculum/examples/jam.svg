@@ -1,5 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Jam">
   <rect width="128" height="128" rx="20" fill="hsl(70 70% 93%)"/>
   <circle cx="64" cy="62" r="44" fill="hsl(70 75% 97%)"/>
-  <text x="64" y="66" font-size="66" text-anchor="middle" dominant-baseline="central" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Android Emoji, sans-serif">🫙</text>
+  
+  <!-- jar body -->
+  <rect x="38" y="44" width="52" height="64" rx="11" fill="#eef2f7"
+    stroke="#8b98a9" stroke-width="2.5"/>
+  <!-- the jam, filling all but the top -->
+  <path d="M40.5 64 H87.5 V97 a9 9 0 0 1-9 9 H49.5 a9 9 0 0 1-9-9 Z" fill="#b52c4c"/>
+  <rect x="47" y="72" width="34" height="19" rx="3" fill="#fdf6ec"/>
+  <!-- neck, then the cloth cover tied over it -->
+  <rect x="45" y="34" width="38" height="12" rx="4" fill="#e2e8f0"
+    stroke="#8b98a9" stroke-width="2.5"/>
+  <path d="M42 37 C46 16, 82 16, 86 37 Z" fill="#dc6a63"/>
+  <circle cx="55" cy="29" r="2.5" fill="#fdf6ec"/>
+  <circle cx="66" cy="25" r="2.5" fill="#fdf6ec"/>
+  <circle cx="76" cy="30" r="2.5" fill="#fdf6ec"/>
+  <rect x="42" y="34" width="44" height="5" rx="2.5" fill="#8a5a3b"/>
 </svg>

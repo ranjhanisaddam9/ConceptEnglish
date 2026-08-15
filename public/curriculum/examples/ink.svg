@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Ink">
+  <rect width="128" height="128" rx="20" fill="hsl(230 70% 93%)"/>
+  <circle cx="64" cy="62" r="44" fill="hsl(230 75% 97%)"/>
+  
+  <path d="M38 60 H90 V96 a10 10 0 0 1-10 10 H48 a10 10 0 0 1-10-10 Z"
+    fill="#dbeafe" stroke="#64748b" stroke-width="2.5"/>
+  <path d="M40.5 74 H87.5 V96 a8 8 0 0 1-8 8 H48.5 a8 8 0 0 1-8-8 Z"
+    fill="#1e3a8a"/>
+  <rect x="54" y="46" width="20" height="16" rx="3" fill="#dbeafe"
+    stroke="#64748b" stroke-width="2.5"/>
+  <rect x="48" y="34" width="32" height="13" rx="4" fill="#334155"/>
+  <path d="M101 48 C107 58 107 63 101 67 C95 63 95 58 101 48 Z" fill="#1e3a8a"/>
+</svg>

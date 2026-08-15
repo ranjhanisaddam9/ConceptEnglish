@@ -8,10 +8,8 @@ import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { useLabelMode } from "@/hooks/use-preferences";
 import { itemLabel, labelModeOptions } from "@/lib/curriculum/display";
 import {
-  LETTER_GROUP_FILTER_OPTIONS,
   letterGroupLabel,
   type LetterGroup,
-  type LetterGroupFilter,
 } from "@/lib/curriculum/letter-groups";
 import { getNeighbours } from "@/lib/curriculum/navigation";
 import type { ContentItem, Unit } from "@/lib/curriculum/types";
@@ -57,9 +55,19 @@ export function UnitBrowser({
   const isControlled = selectedItemId !== undefined;
   const resolvedSelectedId = isControlled ? selectedItemId : internalSelectedId;
 
+  /**
+   * A phonics unit is about the sound a letter makes, so it drops the choices
+   * that only matter when learning letter *shapes*: no "Both" case, no "All"
+   * sounds, and no writing zones at all.
+   */
+  const isPhonics = unit.kind === "phonics";
+
   const options = useMemo(
-    () => labelModeOptions(unit.kind, items),
-    [unit.kind, items],
+    () =>
+      labelModeOptions(unit.kind, items).filter(
+        (option) => !isPhonics || option.value !== "both",
+      ),
+    [unit.kind, items, isPhonics],
   );
 
   // The voice/accent preference lives on the Settings page; the sound buttons
@@ -73,26 +81,28 @@ export function UnitBrowser({
     options[0]?.value ??
     "primary";
 
-  // Vowels and consonants — always relevant in a letters unit.
-  const [groupFilter, setGroupFilter] = useState<LetterGroupFilter>("all");
-  const isLetters = unit.kind === "letters";
+  // Which filters apply is decided by the tags the content actually carries,
+  // not by the unit's kind — so any unit tagging its items picks them up.
+  const tagsPresent = useMemo(
+    () => new Set(items.flatMap((item) => item.tags)),
+    [items],
+  );
+  const hasLetterGroups = tagsPresent.has("vowel") || tagsPresent.has("consonant");
+  const hasWritingZones =
+    tagsPresent.has("grass") || tagsPresent.has("sky") || tagsPresent.has("root");
 
-  // Writing-zone filter. Only meaningful while looking at lowercase letters,
+  // Writing zones only mean something while looking at lowercase letters,
   // where "grass", "sky" and "root" describe the shape of the letter.
   const [zoneFilter, setZoneFilter] = useState<ZoneFilter>("all");
-  const showZoneFilter = isLetters && activeMode === "secondary";
+  const showZoneFilter =
+    hasWritingZones && activeMode === "secondary" && !isPhonics;
 
+  // Vowels and consonants are no longer filtered here — each phonics unit
+  // already holds only its own letters, and Unit 1 shows the whole alphabet.
   const visibleItems = useMemo(() => {
-    return items.filter((item) => {
-      if (isLetters && groupFilter !== "all" && !item.tags.includes(groupFilter)) {
-        return false;
-      }
-      if (showZoneFilter && zoneFilter !== "all" && !item.tags.includes(zoneFilter)) {
-        return false;
-      }
-      return true;
-    });
-  }, [items, isLetters, groupFilter, showZoneFilter, zoneFilter]);
+    if (!showZoneFilter || zoneFilter === "all") return items;
+    return items.filter((item) => item.tags.includes(zoneFilter));
+  }, [items, showZoneFilter, zoneFilter]);
 
   // Resolved during render rather than synced in an effect, so a selection
   // that disappears (filtered out, renamed, deleted) simply falls back to the
@@ -147,16 +157,6 @@ export function UnitBrowser({
             onChange={setMode}
             options={options}
           />
-          {isLetters && (
-            <SegmentedToggle
-              caption="Sound"
-              size="sm"
-              value={groupFilter}
-              onChange={setGroupFilter}
-              options={LETTER_GROUP_FILTER_OPTIONS}
-            />
-          )}
-
           {showZoneFilter && (
             <SegmentedToggle
               caption="Letter shape"
@@ -176,7 +176,7 @@ export function UnitBrowser({
           mode={activeMode}
           idPrefix={domId}
           panelId={panelId}
-          accentTag={isLetters ? "vowel" : undefined}
+          accentTag={hasLetterGroups ? "vowel" : undefined}
         />
       </div>
 
@@ -199,7 +199,7 @@ export function UnitBrowser({
           panelId={panelId}
           labelledBy={`${domId}-tab-${activeItem.id}`}
           badge={
-            isLetters
+            hasLetterGroups
               ? letterGroupLabel(
                   (activeItem.tags.find((tag) =>
                     tag === "vowel" || tag === "consonant",
@@ -211,6 +211,13 @@ export function UnitBrowser({
             neighbours ? () => handleSelect(neighbours.previous.id) : undefined
           }
           onNext={neighbours ? () => handleSelect(neighbours.next.id) : undefined}
+          // x is taught through the end of a word, because no English word
+          // opens with the sound it makes.
+          examplesHeading={
+            activeItem.tags.includes("ending-sound")
+              ? `Words that end with ${activeItem.primaryLabel}`
+              : undefined
+          }
           previousLabel={
             neighbours ? itemLabel(neighbours.previous, activeMode) : undefined
           }

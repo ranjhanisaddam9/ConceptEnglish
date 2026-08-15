@@ -31,6 +31,8 @@ export async function listUnits(): Promise<Unit[]> {
         description: unit.description,
         orderIndex: unit.orderIndex,
         isPublished: unit.isPublished,
+        letterGroup: unit.letterGroup,
+        patternSet: unit.patternSet,
       }),
     ).sort(byOrderIndex);
   }
@@ -125,6 +127,19 @@ export async function listItemsForUnit(unitId: string): Promise<ContentItem[]> {
       toContentItem(row, (examplesByItem.get(row.id) ?? []).sort(byOrderIndex)),
     )
     .sort(byOrderIndex);
+}
+
+/**
+ * Every letter in the curriculum, taken from the unit that teaches the
+ * alphabet.
+ *
+ * A unit covering only consonants or only vowels still needs the whole set for
+ * sheets that ask a child to tell one from the other.
+ */
+export async function getAlphabet(): Promise<ContentItem[]> {
+  const units = await listUnits();
+  const alphabet = units.find((unit) => unit.kind === "letters");
+  return alphabet ? listItemsForUnit(alphabet.id) : [];
 }
 
 export async function getItemById(itemId: string): Promise<ContentItem | null> {

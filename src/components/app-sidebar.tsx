@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap, LayoutDashboard, Settings } from "lucide-react";
+import { GraduationCap, LayoutDashboard, Library, Settings } from "lucide-react";
 
 import {
   Sidebar,
@@ -19,7 +19,6 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { unitKindLabel } from "@/lib/curriculum/display";
 import type { Unit } from "@/lib/curriculum/types";
 
 /**
@@ -30,7 +29,7 @@ import type { Unit } from "@/lib/curriculum/types";
  */
 
 export interface AppSidebarProps {
-  units: Pick<Unit, "id" | "title" | "slug" | "kind">[];
+  units: Pick<Unit, "id" | "title" | "slug" | "kind" | "letterGroup">[];
 }
 
 export function AppSidebar({ units }: AppSidebarProps) {
@@ -82,25 +81,7 @@ export function AppSidebar({ units }: AppSidebarProps) {
                   <SidebarMenuSub>
                     {units.map((unit) => {
                       const unitHref = `/curriculum/${unit.slug}`;
-                      // Worksheets are handwriting and letter-matching
-                      // exercises, so they only apply to letter units.
-                      const worksheets =
-                        unit.kind === "letters"
-                          ? [
-                              {
-                                href: `${unitHref}/worksheet`,
-                                label: "W1: Tracing",
-                              },
-                              {
-                                href: `${unitHref}/worksheet/match`,
-                                label: "W2: Match letters",
-                              },
-                              {
-                                href: `${unitHref}/worksheet/missing`,
-                                label: "W3: Missing Letters",
-                              },
-                            ]
-                          : [];
+                      const worksheets = worksheetsFor(unit, unitHref);
 
                       return (
                         <SidebarMenuSubItem key={unit.id}>
@@ -109,10 +90,7 @@ export function AppSidebar({ units }: AppSidebarProps) {
                             isActive={isCurrent(unitHref)}
                           >
                             <Link href={unitHref}>
-                              <span>
-                                {shortUnitName(unit.title)}:{" "}
-                                {unitKindLabel(unit.kind)}
-                              </span>
+                              <span>{navUnitName(unit.title)}</span>
                             </Link>
                           </SidebarMenuSubButton>
 
@@ -140,6 +118,20 @@ export function AppSidebar({ units }: AppSidebarProps) {
                 )}
               </SidebarMenuItem>
 
+              {/* Reference material, belonging to no single unit. */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Word bank"
+                  isActive={isCurrent("/word-bank")}
+                >
+                  <Link href="/word-bank">
+                    <Library aria-hidden />
+                    <span>Word bank</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -162,10 +154,72 @@ export function AppSidebar({ units }: AppSidebarProps) {
   );
 }
 
+/** "Unit 1 · Letters" reads as "Unit 1: Letters" in the panel. */
+function navUnitName(title: string) {
+  const [number, ...rest] = title.split("·");
+  return rest.length > 0
+    ? `${number.trim()}: ${rest.join("·").trim()}`
+    : title;
+}
+
+/** "Vowels" or "Consonants", for naming a sheet after what it drills. */
+function letterGroupNoun(group: Unit["letterGroup"]) {
+  return group === "vowel" ? "Vowels" : "Consonants";
+}
+
 /**
- * "Unit 1 · The Alphabet" becomes "Unit 1" here; the sidebar pairs it with
- * what the unit teaches, giving "Unit 1: Letters" in a width that fits.
+ * Which worksheets a unit offers.
+ *
+ * Keyed on what the unit teaches rather than on its slug, so a future letters
+ * or phonics unit picks up the same set without touching this file.
  */
-function shortUnitName(title: string) {
-  return title.split("·")[0].trim() || title;
+function worksheetsFor(unit: AppSidebarProps["units"][number], unitHref: string) {
+  switch (unit.kind) {
+    case "letters":
+      return [
+        { href: `${unitHref}/worksheet`, label: "W1: Tracing" },
+        { href: `${unitHref}/worksheet/match`, label: "W2: Match letters" },
+        { href: `${unitHref}/worksheet/missing`, label: "W3: Missing Letters" },
+      ];
+    // A pattern unit teaches words rather than letters, so it offers the
+    // letter-identifying sheet only when it says which letters it is about.
+    case "word_patterns":
+      return unit.letterGroup
+        ? [
+            {
+              href: `${unitHref}/worksheet/identify`,
+              label: `W1: Identify ${letterGroupNoun(unit.letterGroup)}`,
+            },
+          ]
+        : [];
+    case "phonics": {
+      // A phonics unit names its sheets after the letters it covers, so a
+      // vowels unit reads "Matching Vowels", not "Matching Consonants".
+      const isVowels = unit.letterGroup === "vowel";
+      const noun = letterGroupNoun(unit.letterGroup);
+      return [
+        {
+          href: `${unitHref}/worksheet/identify`,
+          label: `W1: Identify ${noun}`,
+        },
+        // The picture sheets rest on words *beginning* or *ending* with the
+        // letter, which only works for consonants — a vowel rarely sits at
+        // either end of a word.
+        ...(isVowels
+          ? []
+          : [
+              {
+                href: `${unitHref}/worksheet/picture-match`,
+                label: `W2: Matching ${noun}`,
+              },
+              {
+                href: `${unitHref}/worksheet/write-consonants`,
+                label: `W3: Writing ${noun}`,
+              },
+            ]),
+      ];
+    }
+    default:
+      return [];
+  }
 }

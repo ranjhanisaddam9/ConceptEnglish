@@ -10,15 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
-  MATCH_ANSWER_OPTIONS,
   MATCH_DIRECTION_OPTIONS,
   MATCH_LAYOUT,
   MATCH_ORDER_OPTIONS,
+  MATCH_PATTERN_OPTIONS,
   buildMatchSheets,
   matchInstruction,
-  type MatchAnswerMode,
   type MatchDirection,
   type MatchOrder,
+  type MatchPattern,
   type MatchQuestion,
 } from "@/lib/curriculum/matching";
 import type { ContentItem, Unit } from "@/lib/curriculum/types";
@@ -45,14 +45,14 @@ const INITIAL_SEED = 1;
 
 function QuestionRow({
   question,
-  answerMode,
+  pattern,
   imageOnly,
 }: {
   question: MatchQuestion;
-  answerMode: MatchAnswerMode;
+  pattern: MatchPattern;
   imageOnly: boolean;
 }) {
-  const encircled = answerMode === "colour";
+  const encircled = pattern === "colour";
   // Only hide the letter when there is actually a picture to ask about.
   const hideLetter = imageOnly && question.picture !== null;
 
@@ -82,7 +82,7 @@ function QuestionRow({
         >
           <span
             className="font-letter leading-none font-bold"
-            style={{ fontSize: "11mm" }}
+            style={{ fontSize: "11mm", color: question.promptColour }}
           >
             {question.prompt}
           </span>
@@ -92,7 +92,7 @@ function QuestionRow({
       <div className="flex flex-1 items-center justify-around border-2 border-l-0 border-neutral-800 px-2">
         {question.options.map((option, index) => (
           <span
-            key={`${option}-${index}`}
+            key={`${option.text}-${index}`}
             className={cn(
               "font-letter flex items-center justify-center leading-none font-bold",
               // In colour mode every option is already ringed, and the child
@@ -105,11 +105,12 @@ function QuestionRow({
                     width: `${MATCH_LAYOUT.optionCircle}mm`,
                     height: `${MATCH_LAYOUT.optionCircle}mm`,
                     fontSize: "8mm",
+                    color: option.colour,
                   }
-                : { fontSize: "9mm" }
+                : { fontSize: "9mm", color: option.colour }
             }
           >
-            {option}
+            {option.text}
           </span>
         ))}
       </div>
@@ -119,7 +120,7 @@ function QuestionRow({
 
 export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
   const [direction, setDirection] = useState<MatchDirection>("upper-to-lower");
-  const [answerMode, setAnswerMode] = useState<MatchAnswerMode>("circle");
+  const [pattern, setPattern] = useState<MatchPattern>("circle");
   const [imageOnly, setImageOnly] = useState(false);
   const imageOnlyId = useId();
   const [order, setOrder] = useState<MatchOrder>("sequential");
@@ -135,7 +136,7 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
   // never leaves the view pointing past the end.
   const currentPage = pages.length === 0 ? 0 : Math.min(pageIndex, pages.length - 1);
 
-  const instruction = matchInstruction(direction, answerMode, imageOnly);
+  const instruction = matchInstruction(direction, pattern, imageOnly);
 
   // Clamped, not wrapped: page 1 has no "back" and the last page has no
   // "next", so the set reads as a document rather than a carousel.
@@ -162,11 +163,25 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
           options={MATCH_DIRECTION_OPTIONS}
         />
         <SegmentedToggle
-          caption="Answer"
-          value={answerMode}
-          onChange={setAnswerMode}
-          options={MATCH_ANSWER_OPTIONS}
+          caption="Pattern"
+          value={pattern}
+          onChange={setPattern}
+          options={MATCH_PATTERN_OPTIONS}
         />
+
+        {/* Sits beside Pattern because it changes the same thing — the shape
+            of a question — but combines with either marking style. */}
+        <div className="flex h-12 items-center gap-2">
+          <Checkbox
+            id={imageOnlyId}
+            checked={imageOnly}
+            onCheckedChange={(checked) => setImageOnly(checked === true)}
+            className="size-5"
+          />
+          <Label htmlFor={imageOnlyId} className="text-base">
+            Image only
+          </Label>
+        </div>
         <SegmentedToggle
           caption="Order"
           value={order}
@@ -174,29 +189,15 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
           options={MATCH_ORDER_OPTIONS}
         />
 
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            size="lg"
-            onClick={() => window.print()}
-            className="h-12 px-5"
-          >
-            <Printer aria-hidden />
-            {pages.length > 1 ? `Print all ${pages.length} pages` : "Print worksheet"}
-          </Button>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id={imageOnlyId}
-              checked={imageOnly}
-              onCheckedChange={(checked) => setImageOnly(checked === true)}
-              className="size-5"
-            />
-            <Label htmlFor={imageOnlyId} className="text-base">
-              Image only
-            </Label>
-          </div>
-        </div>
+        <Button
+          type="button"
+          size="lg"
+          onClick={() => window.print()}
+          className="h-12 px-5"
+        >
+          <Printer aria-hidden />
+          {pages.length > 1 ? `Print all ${pages.length} pages` : "Print worksheet"}
+        </Button>
       </div>
 
       {pages.length === 0 ? (
@@ -236,7 +237,7 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
                     <QuestionRow
                       key={question.id}
                       question={question}
-                      answerMode={answerMode}
+                      pattern={pattern}
                       imageOnly={imageOnly}
                     />
                   ))}

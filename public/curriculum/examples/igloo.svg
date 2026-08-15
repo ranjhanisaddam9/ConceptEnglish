@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Igloo">
+  <rect width="128" height="128" rx="20" fill="hsl(86 70% 93%)"/>
+  <circle cx="64" cy="62" r="44" fill="hsl(86 75% 97%)"/>
+  
+  <rect x="14" y="98" width="100" height="14" rx="7" fill="#cfe3fb"/>
+  <path d="M18 100 A46 44 0 0 1 110 100 Z" fill="#f8fafc"
+    stroke="#7c8b9e" stroke-width="3"/>
+  <!-- block courses, each cut to the width of the dome at that height -->
+  <path d="M23 80 H105 M38 64 H90" stroke="#bcc9d8" stroke-width="2.2"/>
+  <path d="M41 100 V80 M64 100 V80 M87 100 V80 M50 80 V64 M78 80 V64"
+    stroke="#bcc9d8" stroke-width="2.2"/>
+  <path d="M52 100 A12 16 0 0 1 76 100 Z" fill="#5b6b7f"/>
+</svg>

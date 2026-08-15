@@ -60,6 +60,20 @@ export const DOT_SPACING = 2.6;
 /** The same spacing expressed in em, which is what the skeleton works in. */
 export const DOT_SPACING_EM = DOT_SPACING / LETTER_SIZE;
 
+/**
+ * A random ink colour for a printed letter.
+ *
+ * Lightness and chroma are fixed and only the hue varies, so every letter
+ * comes out equally readable on white paper however the dice fall. Takes the
+ * sheet's seeded generator so a sheet always prints in the same colours.
+ */
+const INK_LIGHTNESS = 0.55;
+const INK_CHROMA = 0.17;
+
+export function randomInk(random: () => number): string {
+  return `oklch(${INK_LIGHTNESS} ${INK_CHROMA} ${Math.floor(random() * 360)})`;
+}
+
 /** Matches the font stack applied by the `font-letter` utility. */
 export const LETTER_FONT_FAMILY = "Andika";
 

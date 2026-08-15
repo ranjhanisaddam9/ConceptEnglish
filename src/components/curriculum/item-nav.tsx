@@ -30,6 +30,14 @@ export interface ItemNavProps {
    * a glance even when nothing is filtered out.
    */
   accentTag?: string;
+  /**
+   * Fade the buttons in one after the next.
+   *
+   * For navigators whose contents genuinely change — picking a vowel reveals
+   * that vowel's word families — so the new set reads as an answer to the
+   * choice rather than appearing all at once.
+   */
+  reveal?: boolean;
   className?: string;
 }
 
@@ -41,6 +49,7 @@ export function ItemNav({
   idPrefix,
   panelId,
   accentTag,
+  reveal = false,
   className,
 }: ItemNavProps) {
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -106,12 +115,21 @@ export function ItemNav({
         className,
       )}
     >
-      {items.map((item) => {
+      {items.map((item, index) => {
         const isSelected = item.id === selectedItemId;
         const isAccented = Boolean(accentTag && item.tags.includes(accentTag));
         return (
           <button
             key={item.id}
+            data-item-reveal={reveal ? "" : undefined}
+            style={
+              reveal
+                ? ({
+                    // Capped so a long row does not keep a teacher waiting.
+                    "--reveal-delay": `${Math.min(index, 12) * 45}ms`,
+                  } as React.CSSProperties)
+                : undefined
+            }
             ref={(node) => {
               if (node) buttonRefs.current.set(item.id, node);
               else buttonRefs.current.delete(item.id);

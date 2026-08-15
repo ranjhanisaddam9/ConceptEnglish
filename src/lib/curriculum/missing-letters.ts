@@ -1,7 +1,7 @@
 import { itemLabel } from "./display";
 import { mulberry32, shuffled } from "./sheet-order";
 import type { ContentItem, LabelMode } from "./types";
-import { PAGE, ROW_RULING } from "./worksheet";
+import { PAGE, ROW_RULING, randomInk } from "./worksheet";
 
 /**
  * "Missing letters" worksheet.
@@ -59,7 +59,7 @@ const ENTIRE_MISSING_SHARE = 0.35;
 const MAX_CONSECUTIVE_MISSING = 2;
 
 export type MissingCell =
-  | { kind: "letter"; text: string }
+  | { kind: "letter"; text: string; colour: string }
   | { kind: "blank" };
 
 export interface MissingQuestion {
@@ -72,8 +72,8 @@ function blank(): MissingCell {
   return { kind: "blank" };
 }
 
-function letter(text: string): MissingCell {
-  return { kind: "letter", text };
+function letter(text: string, random: () => number): MissingCell {
+  return { kind: "letter", text, colour: randomInk(random) };
 }
 
 /** Picks `count` distinct indexes below `length`. */
@@ -120,7 +120,7 @@ export function buildRandomRows(
       cells: Array.from({ length: runLength }, (_, offset) =>
         hidden.has(offset)
           ? blank()
-          : letter(itemLabel(ordered[start + offset], labelMode)),
+          : letter(itemLabel(ordered[start + offset], labelMode), random),
       ),
     };
   });
@@ -175,10 +175,11 @@ export function buildEntireSheet(
     Math.round(ordered.length * ENTIRE_MISSING_SHARE),
   );
 
-  const hidden = chooseHidden(ordered.length, target, mulberry32(seed));
+  const random = mulberry32(seed);
+  const hidden = chooseHidden(ordered.length, target, random);
 
   const cells: MissingCell[] = ordered.map((item, index) =>
-    hidden.has(index) ? blank() : letter(itemLabel(item, labelMode)),
+    hidden.has(index) ? blank() : letter(itemLabel(item, labelMode), random),
   );
 
   const lines: MissingCell[][] = [];

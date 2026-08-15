@@ -1,6 +1,6 @@
 import { mulberry32, paginate, shuffled, type SheetOrder } from "./sheet-order";
 import type { ContentItem } from "./types";
-import { PAGE } from "./worksheet";
+import { PAGE, randomInk } from "./worksheet";
 
 /**
  * "Match the letters" worksheet.
@@ -33,12 +33,15 @@ export const MATCH_DIRECTION_OPTIONS = [
  *   circle — the options are plain letters, and the child rings the match
  *   colour — every option already sits in a circle, and the child colours in
  *            the one holding the match
+ *
+ * Independent of the "image only" setting, which hides the letter being
+ * matched; the two combine freely.
  */
-export const MATCH_ANSWER_MODES = ["circle", "colour"] as const;
+export const MATCH_PATTERNS = ["circle", "colour"] as const;
 
-export type MatchAnswerMode = (typeof MATCH_ANSWER_MODES)[number];
+export type MatchPattern = (typeof MATCH_PATTERNS)[number];
 
-export const MATCH_ANSWER_OPTIONS = [
+export const MATCH_PATTERN_OPTIONS = [
   {
     value: "circle" as const,
     label: "Circle it",
@@ -71,7 +74,7 @@ export const MATCH_LAYOUT = {
  */
 export function matchInstruction(
   direction: MatchDirection,
-  answerMode: MatchAnswerMode,
+  pattern: MatchPattern,
   imageOnly = false,
 ): string {
   const shown = direction === "upper-to-lower" ? "capital letter" : "small letter";
@@ -82,9 +85,9 @@ export function matchInstruction(
     ? `${wanted} that the picture begins with`
     : `${wanted} that matches the ${shown}`;
 
-  return answerMode === "circle"
-    ? `Draw a circle around the ${target}.`
-    : `Colour the circle holding the ${target}.`;
+  return pattern === "colour"
+    ? `Colour the circle holding the ${target}.`
+    : `Draw a circle around the ${target}.`;
 }
 
 const ROW_PITCH = MATCH_LAYOUT.promptBox + MATCH_LAYOUT.rowGap;
@@ -94,14 +97,21 @@ export const MATCH_ROW_COUNT = Math.floor(
   (PAGE.height - PAGE.margin * 2 - PAGE.headerHeight) / ROW_PITCH,
 );
 
+export interface MatchOption {
+  text: string;
+  /** Independent of the prompt's colour, so it never hints at the answer. */
+  colour: string;
+}
+
 export interface MatchQuestion {
   id: string;
   /** Letter shown in the square box. */
   prompt: string;
+  promptColour: string;
   /** The option that matches the prompt. */
   answer: string;
   /** The five candidates, already shuffled. */
-  options: string[];
+  options: MatchOption[];
   /**
    * The letter's picture — "A is for Apple" — so a child who cannot yet read
    * the letter still has a way in.
@@ -159,8 +169,12 @@ export function buildMatchSheets(
     return {
       id: item.id,
       prompt: promptOf(item),
+      promptColour: randomInk(random),
       answer,
-      options: shuffled([answer, ...distractors], random),
+      options: shuffled([answer, ...distractors], random).map((text) => ({
+        text,
+        colour: randomInk(random),
+      })),
       picture: illustrated?.imageUrl
         ? { src: illustrated.imageUrl, alt: illustrated.label }
         : null,

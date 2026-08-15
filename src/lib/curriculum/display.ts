@@ -37,10 +37,17 @@ const LABEL_MODE_OPTIONS: Record<UnitKind, LabelModeOption[]> = {
     { value: "secondary", label: "Alternate", description: "Show the alternate form" },
     { value: "both", label: "Both", description: "Show both forms" },
   ],
+  // A phonics unit works through the same letters, so it uses the same words
+  // for their two forms.
   phonics: [
-    { value: "primary", label: "Sound", description: "Show the letter sound" },
-    { value: "secondary", label: "Alternate", description: "Show the alternate form" },
-    { value: "both", label: "Both", description: "Show both forms" },
+    { value: "primary", label: "Uppercase", description: "Show capital letters" },
+    { value: "secondary", label: "Lowercase", description: "Show small letters" },
+    { value: "both", label: "Both", description: "Show capital and small letters" },
+  ],
+  // A pattern unit's items are patterns — "-ab", "a", "bl", "sh" — which have
+  // only one form. The unit offers a pattern toggle instead; see `patterns.ts`.
+  word_patterns: [
+    { value: "primary", label: "Pattern", description: "Show the pattern" },
   ],
   custom: [
     { value: "primary", label: "Primary", description: "Show the primary form" },
@@ -48,19 +55,6 @@ const LABEL_MODE_OPTIONS: Record<UnitKind, LabelModeOption[]> = {
     { value: "both", label: "Both", description: "Show both forms" },
   ],
 };
-
-/** Human name for what a unit teaches, used in navigation. */
-const UNIT_KIND_LABELS: Record<UnitKind, string> = {
-  letters: "Letters",
-  numbers: "Numbers",
-  sight_words: "Sight words",
-  phonics: "Phonics",
-  custom: "Content",
-};
-
-export function unitKindLabel(kind: UnitKind): string {
-  return UNIT_KIND_LABELS[kind] ?? UNIT_KIND_LABELS.custom;
-}
 
 export function labelModeOptions(
   kind: UnitKind,

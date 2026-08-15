@@ -30,6 +30,15 @@ export interface ItemDetailProps {
   labelledBy?: string;
   /** Short label for the item, e.g. "Vowel". */
   badge?: string;
+  /** Set false to show the letter alone, with no example words. */
+  showExamples?: boolean;
+  /** Overrides "Words that start with A". */
+  examplesHeading?: string;
+  /**
+   * Widest the example grid may get. Three suits a letter's handful of words;
+   * five keeps a whole word family on a couple of rows.
+   */
+  exampleColumns?: 3 | 5;
   /** Step controls shown either side of the letter card. */
   onPrevious?: () => void;
   onNext?: () => void;
@@ -45,6 +54,9 @@ export function ItemDetail({
   panelId,
   labelledBy,
   badge,
+  showExamples = true,
+  examplesHeading: examplesHeadingProp,
+  exampleColumns = 3,
   onPrevious,
   onNext,
   previousLabel,
@@ -53,11 +65,18 @@ export function ItemDetail({
 }: ItemDetailProps) {
   const glyph = itemLabel(item, mode);
   const examples = item.examples;
-  const isLetters = kind === "letters";
+  // Phonics works through the same alphabet, so it gets the writing ruling
+  // and the "words that start with" heading too.
+  const isLetters = kind === "letters" || kind === "phonics";
 
-  const examplesHeading = isLetters
-    ? `Words that start with ${item.primaryLabel}`
-    : `Examples for ${item.primaryLabel}`;
+  const examplesHeading =
+    examplesHeadingProp ??
+    (isLetters
+      ? `Words that start with ${item.primaryLabel}`
+      : `Examples for ${item.primaryLabel}`);
+
+  // Five-across tiles have to be smaller or they run off a laptop screen.
+  const isWide = exampleColumns === 5;
 
   return (
     <section
@@ -103,7 +122,11 @@ export function ItemDetail({
               size="xl"
               text={itemSpeechText(item)}
               audioUrl={item.audioUrl}
-              label={`Say the letter ${item.primaryLabel}`}
+              label={
+                isLetters
+                  ? `Say the letter ${item.primaryLabel}`
+                  : `Say ${item.primaryLabel}`
+              }
             />
           </div>
         </Card>
@@ -118,7 +141,7 @@ export function ItemDetail({
       </div>
 
       {/* ---- Example words ---- */}
-      {examples.length > 0 && (
+      {showExamples && examples.length > 0 && (
         <div className="w-full">
           <h2 className="font-heading mb-5 text-center text-xl font-semibold text-muted-foreground sm:text-2xl">
             {examplesHeading}
@@ -126,28 +149,43 @@ export function ItemDetail({
 
           <ul
             className={cn(
-              "mx-auto grid w-full max-w-5xl gap-5",
-              "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+              "mx-auto grid w-full gap-5",
+              isWide
+                ? "max-w-6xl grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                : "max-w-5xl grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
               // Keep a lone example from stretching across the full width.
               examples.length === 1 && "max-w-sm sm:grid-cols-1",
-              examples.length === 2 && "max-w-2xl lg:grid-cols-2",
+              examples.length === 2 && !isWide && "max-w-2xl lg:grid-cols-2",
             )}
           >
             {examples.map((example) => (
               <li key={example.id}>
-                <Card className="h-full items-center gap-4 p-5 text-center">
+                <Card
+                  className={cn(
+                    "h-full items-center text-center",
+                    isWide ? "gap-3 p-4" : "gap-4 p-5",
+                  )}
+                >
                   <Artwork
                     src={example.imageUrl}
                     alt={example.label}
                     fallbackText={example.label.charAt(0).toUpperCase()}
-                    className="aspect-square w-full max-w-56"
-                    fallbackTextClassName="text-6xl"
+                    className={cn(
+                      "aspect-square w-full",
+                      isWide ? "max-w-36" : "max-w-56",
+                    )}
+                    fallbackTextClassName={isWide ? "text-5xl" : "text-6xl"}
                   />
-                  <p className="font-letter text-3xl font-bold break-words sm:text-4xl">
+                  <p
+                    className={cn(
+                      "font-letter font-bold break-words",
+                      isWide ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl",
+                    )}
+                  >
                     {exampleLabel(example, mode, kind)}
                   </p>
                   <SoundButton
-                    size="lg"
+                    size={isWide ? "md" : "lg"}
                     text={exampleSpeechText(item, example)}
                     audioUrl={example.audioUrl}
                     label={`Say "${exampleSpeechText(item, example)}"`}
@@ -159,7 +197,7 @@ export function ItemDetail({
         </div>
       )}
 
-      {examples.length === 0 && (
+      {showExamples && examples.length === 0 && (
         <p className="text-center text-muted-foreground">
           No example words yet for this one.
         </p>

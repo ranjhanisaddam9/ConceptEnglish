@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
+import { PatternBrowser } from "@/components/curriculum/pattern-browser";
 import { UnitBrowser } from "@/components/curriculum/unit-browser";
 import { getUnitBySlug } from "@/lib/curriculum/queries";
 
@@ -36,7 +37,11 @@ export default async function UnitPage({ params }: UnitPageProps) {
           All units
         </Link>
 
-      <UnitBrowser unit={unit} items={unit.items} />
+      {unit.kind === "word_patterns" ? (
+        <PatternBrowser unit={unit} items={unit.items} />
+      ) : (
+        <UnitBrowser unit={unit} items={unit.items} />
+      )}
     </main>
   );
 }
