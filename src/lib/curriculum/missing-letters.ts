@@ -50,7 +50,14 @@ export const MISSING_ROW_COUNT = Math.floor(
 
 /** "line" shows a short consecutive run with some of it blanked out. */
 const LINE_RUN = { standard: 5, both: 3 } as const;
-const LINE_BLANKS = { standard: 2, both: 1 } as const;
+/**
+ * One gap per row, whichever case is showing.
+ *
+ * A row is a single question: the child reads the run either side of the gap
+ * and names the one letter missing from it. Two gaps in a short run leave too
+ * little to read from, and make the row two questions wearing one number.
+ */
+const LINE_BLANKS = { standard: 1, both: 1 } as const;
 
 /** Roughly this share of the alphabet is blanked in "entire" mode. */
 const ENTIRE_MISSING_SHARE = 0.35;

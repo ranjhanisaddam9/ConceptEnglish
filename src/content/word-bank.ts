@@ -33,11 +33,11 @@ export const CVC_WORDS: string[] = [
   // b
   "bag", "bat", "bed", "bin", "bit", "box", "bud", "bug", "bun", "bus",
   // c
-  "cab", "can", "cap", "cat", "cob", "cub", "cup", "cut",
+  "cab", "can", "cap", "cat", "cob", "cot", "cub", "cup", "cut",
   // d
-  "dad", "dig", "dog", "dot",
+  "dad", "den", "dig", "dip", "dog", "dot",
   // f
-  "fan", "fit", "fix", "fog", "fox",
+  "fan", "fig", "fin", "fit", "fix", "fog", "fox",
   // g
   // No "gem": its g is soft, and every other g in this list is hard.
   "gas", "gum",
@@ -54,17 +54,17 @@ export const CVC_WORDS: string[] = [
   // n
   "nap", "net", "nut",
   // p
-  "pad", "pan", "peg", "pen", "pet", "pin", "pit", "pot", "pup",
+  "pad", "pan", "pat", "peg", "pen", "pet", "pin", "pit", "pot", "pup",
   // r
   "rag", "ram", "rat", "red", "rub", "rug", "run",
   // s
-  "sad", "sit", "six", "sob", "sum", "sun",
+  "sad", "sat", "sip", "sit", "six", "sob", "sum", "sun",
   // t
-  "tag", "tap", "ten", "tin", "tub",
+  "tag", "tap", "ten", "tin", "top", "tub",
   // v
   "van", "vet",
   // w
-  "wax", "web", "wet", "wig", "win",
+  "wag", "wax", "web", "wet", "wig", "win",
   // y
   "yam", "yes",
   // z
@@ -333,7 +333,7 @@ export const BLEND_GROUPS: BlendGroup[] = [
   { blend: "sp", words: ["spade", "spider", "spin", "spoon", "spot"] },
   { blend: "st", words: ["stamp", "star", "stick", "stone", "stop"] },
   { blend: "sw", words: ["swan", "sweet", "swim", "swing"] },
-  { blend: "tr", words: ["train", "tray", "tree", "truck", "trunk"] },
+  { blend: "tr", words: ["train", "trap", "tray", "tree", "truck", "trunk"] },
   { blend: "tw", words: ["twelve", "twig", "twin"] },
 ];
 

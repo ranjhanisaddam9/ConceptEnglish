@@ -3,6 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import { Printer } from "lucide-react";
 
+import { playAnswerSound } from "@/lib/curriculum/answer-sound";
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { StepButton } from "@/components/curriculum/step-button";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
@@ -56,8 +57,40 @@ function QuestionRow({
   // Only hide the letter when there is actually a picture to ask about.
   const hideLetter = imageOnly && question.picture !== null;
 
+  // Answering happens on screen only. Nothing here prints: a worksheet that
+  // arrives with the answers already marked is not a worksheet.
+  const [chosen, setChosen] = useState<number | null>(null);
+  const isCorrect =
+    chosen !== null && question.options[chosen].text === question.answer;
+
+  const choose = (index: number) => {
+    // A second choice replaces the first rather than adding to it.
+    setChosen(index);
+    playAnswerSound(question.options[index].text === question.answer);
+  };
+
   return (
-    <div className="flex" style={{ height: `${MATCH_LAYOUT.promptBox}mm` }}>
+    <div
+      className="relative flex"
+      style={{ height: `${MATCH_LAYOUT.promptBox}mm` }}
+    >
+      {chosen !== null && (
+        <span
+          data-answer-mark
+          aria-live="polite"
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2 text-center leading-none font-bold print:hidden",
+            isCorrect ? "text-green-600" : "text-red-600",
+          )}
+          style={{ left: "-9mm", width: "8mm", fontSize: "7mm" }}
+        >
+          {isCorrect ? "✓" : "✗"}
+          <span className="sr-only">
+            {isCorrect ? "Correct" : "Try again"}
+          </span>
+        </span>
+      )}
+
       {/* The letter's picture, in its own square to the left of the letter. */}
       <div
         className="flex shrink-0 items-center justify-center border-2 border-neutral-800 p-1"
@@ -90,29 +123,70 @@ function QuestionRow({
       )}
 
       <div className="flex flex-1 items-center justify-around border-2 border-l-0 border-neutral-800 px-2">
-        {question.options.map((option, index) => (
-          <span
-            key={`${option.text}-${index}`}
-            className={cn(
-              "font-letter flex items-center justify-center leading-none font-bold",
-              // In colour mode every option is already ringed, and the child
-              // fills in the right one.
-              encircled && "rounded-full border-2 border-neutral-800",
-            )}
-            style={
-              encircled
-                ? {
-                    width: `${MATCH_LAYOUT.optionCircle}mm`,
-                    height: `${MATCH_LAYOUT.optionCircle}mm`,
-                    fontSize: "8mm",
-                    color: option.colour,
-                  }
-                : { fontSize: "9mm", color: option.colour }
-            }
-          >
-            {option.text}
-          </span>
-        ))}
+        {question.options.map((option, index) => {
+          const picked = chosen === index;
+          return (
+            <button
+              key={`${option.text}-${index}`}
+              type="button"
+              onClick={() => choose(index)}
+              aria-pressed={picked}
+              className={cn(
+                "font-letter flex items-center justify-center leading-none font-bold",
+                "outline-none focus-visible:ring-4 focus-visible:ring-ring/60",
+                // On paper this is just a letter; on screen it answers back.
+                "motion-safe:transition-transform motion-safe:duration-150",
+                "cursor-pointer print:transform-none",
+                // A ringed option carries its own colour as the signal, so it
+                // only needs a nudge; a bare letter has nothing but its size.
+                encircled ? "hover:scale-[1.2]" : "hover:scale-[1.3]",
+                // In circle mode the child's job is to draw a ring, so
+                // choosing draws one for them. The ring is always in the
+                // layout and merely transparent until then, so nothing shifts
+                // and the printed sheet is unchanged.
+                !encircled && "rounded-full border-2 border-transparent",
+                // In colour mode every option is already ringed, and the child
+                // fills in the right one.
+                encircled && "rounded-full border-2 border-neutral-800",
+                encircled && "hover:bg-[color-mix(in_oklch,currentColor,transparent_75%)]",
+              )}
+              style={{
+                ...(encircled
+                  ? {
+                      width: `${MATCH_LAYOUT.optionCircle}mm`,
+                      height: `${MATCH_LAYOUT.optionCircle}mm`,
+                      fontSize: "8mm",
+                      color: option.colour,
+                    }
+                  : {
+                      // Snug around the letter — the ring is a mark the child
+                      // made, not a box the letter sits in.
+                      width: `${MATCH_LAYOUT.optionCircle * 0.75}mm`,
+                      height: `${MATCH_LAYOUT.optionCircle * 0.75}mm`,
+                      fontSize: "9mm",
+                      color: option.colour,
+                    }),
+                // Set here rather than as a utility class: the hover variant
+                // owns the same property, and the two were cancelling out.
+                ...(picked
+                  ? { transform: encircled ? "scale(1.2)" : "scale(1.05)" }
+                  : {}),
+                ...(picked && !encircled
+                  ? { borderColor: option.colour }
+                  : {}),
+                // A quarter-strength wash, so the letter still reads through
+                // whatever the child has filled in.
+                ...(picked && encircled
+                  ? {
+                      backgroundColor: `color-mix(in oklch, ${option.colour}, transparent 75%)`,
+                    }
+                  : {}),
+              }}
+            >
+              {option.text}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -235,7 +309,12 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
                 >
                   {questions.map((question) => (
                     <QuestionRow
-                      key={question.id}
+                      // Rebuilding the sheet — a new order, direction or
+                      // shuffle — asks different questions, so any answers
+                      // already marked belong to a sheet that no longer
+                      // exists. Keying on what built it remounts the rows and
+                      // clears them.
+                      key={`${direction}-${order}-${seed}-${question.id}`}
                       question={question}
                       pattern={pattern}
                       imageOnly={imageOnly}

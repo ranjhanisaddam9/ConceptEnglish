@@ -103,7 +103,7 @@ const WORD_ART = {
   fix: "🔧", mix: "🥣", job: "👷", sum: "➕", bud: "🌱", yam: "🍠",
   ladder: "🪜", farmer: "🧑‍🌾",
   // New blend words.
-  cliff: "⛰️", clip: "📎", plug: "🔌",
+  cliff: "⛰️", clip: "📎", plug: "🔌", trap: "🪤",
 
   // --- Final blends ---
   hand: "✋", bank: "🏦", pink: "🩷", wink: "😉", tent: "⛺",
