@@ -334,8 +334,11 @@ export function buildChoiceSheet(
       id: candidate.id,
       picture: candidate.picture as { src: string; alt: string },
       before: word.slice(0, at),
-      after: word.slice(at + literal.length),
-      blankLength: literal.length,
+      // Measured by the answer, not the pattern: a family is "-at" but the
+      // answer is only its vowel, and slicing by the family's length would
+      // swallow the consonant after it — "cat" printing as "c".
+      after: word.slice(at + answer.length),
+      blankLength: answer.length,
       answer,
       options: fixed ? inOrder : shuffled([answer, ...others], random),
     };

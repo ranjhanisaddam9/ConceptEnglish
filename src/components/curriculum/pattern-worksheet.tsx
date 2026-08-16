@@ -509,7 +509,7 @@ export function PatternWorksheet({
         // multi-page sheets put them. Kept in the layout when unusable so the
         // sheet stays centred instead of jumping sideways.
         <div className="flex items-center justify-center gap-2 sm:gap-4 print:block">
-          {pageCount > 1 && (
+          {kind === "fluency" && pageCount > 1 && (
             <StepButton
               direction="previous"
               targetLabel={`sheet ${currentPage}`}
@@ -538,7 +538,7 @@ export function PatternWorksheet({
           )}
         </WorksheetPage>
 
-          {pageCount > 1 && (
+          {kind === "fluency" && pageCount > 1 && (
             <StepButton
               direction="next"
               targetLabel={`sheet ${currentPage + 2}`}
