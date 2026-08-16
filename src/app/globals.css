@@ -207,6 +207,29 @@
 }
 
 /* ---------------------------------------------------------------------------
+   The gap being asked about.
+
+   Where a sheet is answered top to bottom, the gap holding the current
+   question breathes so a child can see which one is waiting on them. The
+   colour marks it too, so with motion turned off it is still the odd one out.
+   --------------------------------------------------------------------------- */
+@keyframes blank-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-blank-pulse] {
+    animation: blank-pulse 1200ms ease-in-out infinite;
+  }
+}
+
+/* ---------------------------------------------------------------------------
    Printing a worksheet.
 
    Everything except the A4 page itself is hidden, and the sidebar shell is

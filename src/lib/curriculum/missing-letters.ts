@@ -59,28 +59,79 @@ const LINE_RUN = { standard: 5, both: 3 } as const;
  */
 const LINE_BLANKS = { standard: 1, both: 1 } as const;
 
-/** Roughly this share of the alphabet is blanked in "entire" mode. */
-const ENTIRE_MISSING_SHARE = 0.35;
+/**
+ * How many letters are offered when a gap is answered on screen: the right one
+ * and four wrong ones.
+ */
+const SUGGESTION_COUNT = 5;
 
-/** A child needs a run of letters to read from, so never blank three in a row. */
-const MAX_CONSECUTIVE_MISSING = 2;
+/**
+ * A gap the child can answer on screen.
+ *
+ * Both question shapes are made of gaps, and a gap is answered the same way in
+ * either, so both builders hang one of these off every blank they produce.
+ * None of it prints — see the worksheet component.
+ */
+export interface GapQuestion {
+  id: string;
+  /** The letter belonging in the gap. */
+  answer: string;
+  /** The answer and four wrong letters, shuffled. */
+  options: string[];
+  /**
+   * The colour the gap is asked and answered in. Drawn from the sheet's seed
+   * like every other colour here, so a sheet always asks in the same colours.
+   */
+  colour: string;
+}
 
 export type MissingCell =
   | { kind: "letter"; text: string; colour: string }
-  | { kind: "blank" };
+  | { kind: "blank"; question: GapQuestion };
 
 export interface MissingQuestion {
   id: string;
   /** Cells rendered left to right inside the row's rectangle. */
   cells: MissingCell[];
+  /**
+   * The row's single gap (see LINE_BLANKS) — the same object its blank cell
+   * carries. A row is one question, so it has exactly one of these.
+   */
+  gap: GapQuestion;
 }
 
-function blank(): MissingCell {
-  return { kind: "blank" };
+function blank(question: GapQuestion): MissingCell {
+  return { kind: "blank", question };
 }
 
 function letter(text: string, random: () => number): MissingCell {
   return { kind: "letter", text, colour: randomInk(random) };
+}
+
+/**
+ * Builds the question for one gap.
+ *
+ * The wrong letters come from the rest of the unit, never from what is already
+ * on show around the gap: a letter the child can see is not a real choice.
+ */
+function gapQuestion(
+  id: string,
+  answer: string,
+  labels: string[],
+  shown: Set<string>,
+  random: () => number,
+): GapQuestion {
+  const distractors = shuffled(
+    labels.filter((label) => label !== answer && !shown.has(label)),
+    random,
+  ).slice(0, SUGGESTION_COUNT - 1);
+
+  return {
+    id,
+    answer,
+    options: shuffled([answer, ...distractors], random),
+    colour: randomInk(random),
+  };
 }
 
 /** Picks `count` distinct indexes below `length`. */
@@ -112,6 +163,7 @@ export function buildRandomRows(
   if (ordered.length < runLength) return [];
 
   const random = mulberry32(seed);
+  const labels = ordered.map((item) => itemLabel(item, labelMode));
 
   // Distinct starting letters, so two rows can never be the same run.
   const starts = shuffled(
@@ -122,12 +174,26 @@ export function buildRandomRows(
   return starts.map((start) => {
     const hidden = pickIndexes(runLength, blanks, random);
 
+    const [gapOffset] = hidden;
+    const shown = new Set(
+      Array.from({ length: runLength }, (_, offset) => offset)
+        .filter((offset) => !hidden.has(offset))
+        .map((offset) => labels[start + offset]),
+    );
+
+    const gap = gapQuestion(
+      `line-${start}`,
+      labels[start + gapOffset],
+      labels,
+      shown,
+      random,
+    );
+
     return {
       id: `line-${start}`,
+      gap,
       cells: Array.from({ length: runLength }, (_, offset) =>
-        hidden.has(offset)
-          ? blank()
-          : letter(itemLabel(ordered[start + offset], labelMode), random),
+        hidden.has(offset) ? blank(gap) : letter(labels[start + offset], random),
       ),
     };
   });
@@ -142,29 +208,46 @@ export interface EntireSheet {
 /**
  * Chooses which letters to blank out of the alphabet.
  *
- * Two rules keep the sheet solvable: the first and last letters always show,
- * so the run is anchored at both ends, and no more than two letters in a row
- * are ever blank.
+ * One gap per ruled line, so every line asks exactly one question, and never
+ * two gaps running — a child reads a gap from the letters either side of it,
+ * and a line break does not stop two gaps being neighbours in the alphabet.
+ * The first and last letters always show, so the run is anchored at both ends.
  */
-function chooseHidden(length: number, target: number, random: () => number) {
+function chooseHidden(length: number, random: () => number) {
+  const perLine = MISSING_LAYOUT.lettersPerLine;
+
+  /** The letters on the line starting at `start` that a gap could take. */
+  const openOn = (start: number, after: number) =>
+    Array.from(
+      { length: Math.max(0, Math.min(perLine, length - start)) },
+      (_, offset) => start + offset,
+    ).filter(
+      (index) =>
+        // Gaps sit between the ends, never on them.
+        index > 0 &&
+        index < length - 1 &&
+        // Never two in a row, across a line break as much as within a line.
+        index !== after + 1,
+    );
+
   const hidden = new Set<number>();
-  // Never the first or the last — gaps sit between them.
-  const candidates = shuffled(
-    Array.from({ length: Math.max(0, length - 2) }, (_, index) => index + 1),
-    random,
-  );
+  let previous = -2;
 
-  const runAround = (index: number) => {
-    let run = 1;
-    for (let i = index - 1; i >= 0 && hidden.has(i); i -= 1) run += 1;
-    for (let i = index + 1; i < length && hidden.has(i); i += 1) run += 1;
-    return run;
-  };
+  for (let start = 0; start < length; start += perLine) {
+    const candidates = shuffled(openOn(start, previous), random);
 
-  for (const index of candidates) {
-    if (hidden.size >= target) break;
-    hidden.add(index);
-    if (runAround(index) > MAX_CONSECUTIVE_MISSING) hidden.delete(index);
+    // Taking the last letter of a line would strand the next line's first,
+    // which on a short final line can be its only choice. Prefer a gap that
+    // leaves the next line something to ask.
+    const chosen =
+      candidates.find(
+        (index) =>
+          start + perLine >= length || openOn(start + perLine, index).length > 0,
+      ) ?? candidates[0];
+
+    if (chosen === undefined) continue;
+    hidden.add(chosen);
+    previous = chosen;
   }
 
   return hidden;
@@ -177,17 +260,26 @@ export function buildEntireSheet(
   seed: number,
 ): EntireSheet {
   const ordered = [...items].sort((a, b) => a.orderIndex - b.orderIndex);
-  const target = Math.max(
-    1,
-    Math.round(ordered.length * ENTIRE_MISSING_SHARE),
-  );
 
   const random = mulberry32(seed);
-  const hidden = chooseHidden(ordered.length, target, random);
+  const hidden = chooseHidden(ordered.length, random);
+  const labels = ordered.map((item) => itemLabel(item, labelMode));
 
-  const cells: MissingCell[] = ordered.map((item, index) =>
-    hidden.has(index) ? blank() : letter(itemLabel(item, labelMode), random),
-  );
+  // Which ruled line a letter lands on — the letters sharing a gap's line are
+  // the ones on show beside it.
+  const lineOf = (index: number) =>
+    Math.floor(index / MISSING_LAYOUT.lettersPerLine);
+
+  const cells: MissingCell[] = labels.map((label, index) => {
+    if (!hidden.has(index)) return letter(label, random);
+
+    const shown = new Set(
+      labels.filter(
+        (_, other) => !hidden.has(other) && lineOf(other) === lineOf(index),
+      ),
+    );
+    return blank(gapQuestion(`gap-${index}`, label, labels, shown, random));
+  });
 
   const lines: MissingCell[][] = [];
   for (let start = 0; start < cells.length; start += MISSING_LAYOUT.lettersPerLine) {
