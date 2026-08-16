@@ -144,42 +144,53 @@ export const PATTERN_MATCH_ROW_COUNT = Math.floor(
     (PATTERN_MATCH_LAYOUT.rowHeight + PATTERN_MATCH_LAYOUT.rowGap),
 );
 
-export interface PatternMatchSheet {
-  rows: Array<{ id: string; picture: { src: string; alt: string } }>;
-  patterns: Array<{ text: string; colour: string }>;
+export interface PatternMatchRow {
+  id: string;
+  picture: { src: string; alt: string };
+  /** The word with its pattern taken out, to print under the picture. */
+  before: string;
+  after: string;
+  /** How many letters the blank stands for; 0 when the pattern is not
+   *  spelled out in the word, as with "VCe". */
+  blankLength: number;
 }
 
-/**
- * What the child matches each picture to.
- *
- *   pattern — the letters the word is built on ("sh", "-at")
- *   word    — the whole spelling, which asks them to read it
- */
-export type MatchAnswer = "pattern" | "word";
+export interface PatternMatchSheet {
+  rows: PatternMatchRow[];
+  patterns: Array<{ text: string; colour: string }>;
+}
 
 export function buildPatternMatchSheet(
   items: ContentItem[],
   illustrated: ReadonlySet<string>,
   seed: number,
   rowCount: number = PATTERN_MATCH_ROW_COUNT,
-  answer: MatchAnswer = "pattern",
 ): PatternMatchSheet {
   const random = mulberry32(seed);
   const chosen = selectPatternRows(items, random, rowCount, { illustrated });
 
   const rows = chosen
     .filter((candidate) => candidate.picture)
-    .map((candidate) => ({
-      id: candidate.id,
-      picture: candidate.picture as { src: string; alt: string },
-    }));
+    .map((candidate): PatternMatchRow => {
+      const word = candidate.word.toLowerCase();
+      const literal = literalLetters(candidate.pattern);
+      const at = word.indexOf(literal);
+
+      return {
+        id: candidate.id,
+        picture: candidate.picture as { src: string; alt: string },
+        // A pattern like "VCe" describes a shape rather than spelling any
+        // letters, so there is nothing to rub out and the word is left off.
+        before: at < 0 ? "" : word.slice(0, at),
+        after: at < 0 ? "" : word.slice(at + literal.length),
+        blankLength: at < 0 ? 0 : literal.length,
+      };
+    });
 
   return {
     rows,
     patterns: deranged(
-      chosen.map((candidate) =>
-        answer === "word" ? candidate.word.toLowerCase() : candidate.pattern,
-      ),
+      chosen.map((candidate) => candidate.pattern),
       random,
     ).map((text) => ({ text, colour: randomInk(random) })),
   };
@@ -189,8 +200,18 @@ export function buildPatternMatchSheet(
    Match the picture to its vowel
    ------------------------------------------------------------------------- */
 
+export interface VowelMatchRow {
+  id: string;
+  picture: { src: string; alt: string };
+  /** The word with its vowel taken out, to print under the picture. */
+  before: string;
+  after: string;
+  /** How many letters the blank stands for — "oo" needs a wider gap. */
+  blankLength: number;
+}
+
 export interface VowelMatchSheet {
-  rows: Array<{ id: string; picture: { src: string; alt: string } }>;
+  rows: VowelMatchRow[];
   /** The answer column: every vowel once, however many pictures there are. */
   vowels: Array<{ text: string; colour: string }>;
 }
@@ -217,15 +238,111 @@ export function buildVowelMatchSheet(
   return {
     rows: chosen
       .filter((candidate) => candidate.picture)
-      .map((candidate) => ({
-        id: candidate.id,
-        picture: candidate.picture as { src: string; alt: string },
-      })),
+      .map((candidate) => {
+        // The family is the tail of the word, and its vowel opens it, so both
+        // fall out of the spelling without being stored.
+        const word = candidate.word.toLowerCase();
+        const family = literalLetters(candidate.pattern);
+        const vowel = familyVowel(family);
+        const at = word.length - family.length;
+
+        return {
+          id: candidate.id,
+          picture: candidate.picture as { src: string; alt: string },
+          before: word.slice(0, at),
+          after: word.slice(at + vowel.length),
+          blankLength: vowel.length || 1,
+        };
+      }),
     vowels: vowels.map((text) => ({ text, colour: randomInk(random) })),
   };
 }
 
 const SHORT_VOWEL_LETTERS = ["a", "e", "i", "o", "u"];
+
+/* -------------------------------------------------------------------------
+   Choose the missing letters
+   ------------------------------------------------------------------------- */
+
+export interface ChoiceRow {
+  id: string;
+  picture: { src: string; alt: string };
+  before: string;
+  after: string;
+  blankLength: number;
+  /** The right answer, so a teacher's copy could mark it later. */
+  answer: string;
+  /** What this row offers — always including its own answer. */
+  options: string[];
+}
+
+export interface ChoiceSheet {
+  rows: ChoiceRow[];
+}
+
+/** How many letters a row offers to choose between. */
+const CHOICES_PER_ROW = 5;
+
+export const CHOICE_ROW_COUNT = 7;
+
+/**
+ * Picture, the spelling with a gap in it, then the letters to choose between.
+ *
+ * Each row builds its own options around its own answer, so the answer is
+ * always among them. Where a unit has only five patterns — the vowels, the
+ * digraphs — every row offers all five in the same order, which keeps the
+ * column tidy. Where it has more, twenty-one blends say, each row draws four
+ * others at random, so a child cannot work down the page by elimination.
+ */
+export function buildChoiceSheet(
+  items: ContentItem[],
+  illustrated: ReadonlySet<string>,
+  seed: number,
+  isFamilyUnit: boolean,
+  rowCount: number = CHOICE_ROW_COUNT,
+): ChoiceSheet {
+  const random = mulberry32(seed);
+  const chosen = selectPatternRows(items, random, rowCount, {
+    illustrated,
+    literalOnly: true,
+  });
+
+  // What every row draws its choices from.
+  const pool = isFamilyUnit
+    ? [...SHORT_VOWEL_LETTERS]
+    : [...new Set(items.map((item) => item.primaryLabel))];
+  const fixed = pool.length <= CHOICES_PER_ROW;
+  const inOrder = [...pool].sort((a, b) => a.localeCompare(b));
+
+  const rows = chosen.map((candidate): ChoiceRow => {
+    const word = candidate.word.toLowerCase();
+    const literal = literalLetters(candidate.pattern);
+
+    // A family sheet asks for the vowel; every other unit asks for its own
+    // pattern, named as the unit names it.
+    const answer = isFamilyUnit ? familyVowel(literal) : candidate.pattern;
+    const at = isFamilyUnit
+      ? word.length - literal.length
+      : word.indexOf(literal);
+
+    const others = shuffled(
+      pool.filter((option) => option !== answer),
+      random,
+    ).slice(0, CHOICES_PER_ROW - 1);
+
+    return {
+      id: candidate.id,
+      picture: candidate.picture as { src: string; alt: string },
+      before: word.slice(0, at),
+      after: word.slice(at + literal.length),
+      blankLength: literal.length,
+      answer,
+      options: fixed ? inOrder : shuffled([answer, ...others], random),
+    };
+  });
+
+  return { rows };
+}
 
 /* -------------------------------------------------------------------------
    W2 — write the missing pattern
@@ -394,7 +511,29 @@ export interface FluencyGroup {
 /** How far a balloon may lean either way. */
 const MAX_TILT_DEGREES = 15;
 
+/** What fits one A4 page: rows down it, and shapes across a row. */
+export const FLUENCY_ROWS_PER_PAGE = 8;
+const MAX_FLUENCY_WORDS = 6;
+
 /** How each word is dressed on the family reading sheet. */
+/** How the child marks their answer on a choosing sheet. */
+export const CHOICE_MARKS = ["circle", "colour"] as const;
+
+export type ChoiceMark = (typeof CHOICE_MARKS)[number];
+
+export const CHOICE_MARK_OPTIONS = [
+  {
+    value: "circle" as const,
+    label: "Circle",
+    description: "Draw a circle around the right letters",
+  },
+  {
+    value: "colour" as const,
+    label: "Colour",
+    description: "Colour in the right letters",
+  },
+];
+
 export const WORD_SHAPES = [
   "plain",
   "balloon",
@@ -448,19 +587,30 @@ export function buildFluencyGroups(
 ): FluencyGroup[] {
   const random = mulberry32(seed);
 
+  // Every pattern is kept. More than fit one page are carried onto the next —
+  // see FLUENCY_ROWS_PER_PAGE — rather than dropped, so a reading sheet covers
+  // the unit rather than sampling it.
   return items
-    .map((item) => ({
-      label: item.primaryLabel,
-      words: item.examples
-        .map((example) => example.label.toLowerCase())
-        .sort((a, b) => a.localeCompare(b))
-        .map((text) => ({
-          text,
-          colour: randomInk(random),
-          tilt: (random() * 2 - 1) * MAX_TILT_DEGREES,
-        })),
-    }))
-    .filter((group) => group.words.length > 0);
+    .map((item) => {
+      const all = item.examples.map((example) => example.label.toLowerCase());
+      const picked =
+        all.length > MAX_FLUENCY_WORDS
+          ? shuffled(all, random).slice(0, MAX_FLUENCY_WORDS)
+          : all;
+
+      return {
+        label: item.primaryLabel,
+        words: picked
+          .sort((a, b) => a.localeCompare(b))
+          .map((text) => ({
+            text,
+            colour: randomInk(random),
+            tilt: (random() * 2 - 1) * MAX_TILT_DEGREES,
+          })),
+      };
+    })
+    .filter((group) => group.words.length > 0)
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export function buildFluencyGrid(items: ContentItem[], seed: number): string[] {

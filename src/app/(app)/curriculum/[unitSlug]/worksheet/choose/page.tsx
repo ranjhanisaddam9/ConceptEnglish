@@ -19,19 +19,16 @@ export async function generateMetadata({ params }: PageProps) {
   const unit = await getUnitBySlug(unitSlug);
   if (!unit) return { title: "Worksheet not found · Concept English" };
 
-  return { title: `${unit.title} · Match the picture · Concept English` };
+  return { title: `${unit.title} · Choose the missing letters · Concept English` };
 }
 
 export default async function Page({ params }: PageProps) {
   const { unitSlug } = await params;
   const unit = await getUnitBySlug(unitSlug);
 
-  // A word-family unit has the Match Vowel sheet instead.
   if (
     !unit ||
-    !unit.isPublished ||
-    unit.kind !== "word_patterns" ||
-    unit.patternSet === "short_vowels"
+    !unit.isPublished || unit.kind !== "word_patterns"
   ) {
     notFound();
   }
@@ -50,7 +47,7 @@ export default async function Page({ params }: PageProps) {
           {unit.title}
         </Link>
         <h1 className="font-heading mt-1 text-2xl font-bold sm:text-3xl">
-          Match the picture
+          Choose the missing letters
         </h1>
         <p className="mt-1 text-muted-foreground">
           Reload the page or press New sheet for a fresh set.
@@ -61,7 +58,7 @@ export default async function Page({ params }: PageProps) {
         unit={unit}
         items={unit.items}
         illustrated={illustrated}
-        kind="match"
+        kind="choose"
         seed={randomSheetSeed()}
       />
     </main>

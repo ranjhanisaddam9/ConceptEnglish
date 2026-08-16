@@ -246,13 +246,17 @@ function worksheetsFor(unit: AppSidebarProps["units"][number], unitHref: string)
       const isFamilyUnit = unit.patternSet === "short_vowels";
       const rest = [
         // Identifying the vowel comes before matching a whole spelling.
+        // A word-family unit matches pictures to vowels; matching them to a
+        // whole spelling is what the writing sheet already asks for.
         ...(isFamilyUnit
           ? [{ href: `${unitHref}/worksheet/match-vowel`, label: "Match Vowel" }]
-          : []),
-        {
-          href: `${unitHref}/worksheet/pattern-match`,
-          label: isFamilyUnit ? "Match Spell" : "Match pictures",
-        },
+          : [
+              {
+                href: `${unitHref}/worksheet/pattern-match`,
+                label: "Match pictures",
+              },
+            ]),
+        { href: `${unitHref}/worksheet/choose`, label: "Choose the letters" },
         {
           href: `${unitHref}/worksheet/pattern-write`,
           label: "Write the letters",
