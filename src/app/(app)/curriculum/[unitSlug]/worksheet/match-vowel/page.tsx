@@ -19,20 +19,20 @@ export async function generateMetadata({ params }: PageProps) {
   const unit = await getUnitBySlug(unitSlug);
   if (!unit) return { title: "Worksheet not found · Concept English" };
 
-  const heading =
-    unit.patternSet === "short_vowels" ? "Match the spelling" : "Match the picture";
-  return { title: `${unit.title} · ${heading} · Concept English` };
+  return { title: `${unit.title} · Match the vowel · Concept English` };
 }
 
 export default async function Page({ params }: PageProps) {
   const { unitSlug } = await params;
   const unit = await getUnitBySlug(unitSlug);
 
-  if (!unit || !unit.isPublished || unit.kind !== "word_patterns") notFound();
-
-  // A word-family unit matches pictures to whole spellings.
-  const heading =
-    unit.patternSet === "short_vowels" ? "Match the spelling" : "Match the picture";
+  if (
+    !unit ||
+    !unit.isPublished || unit.kind !== "word_patterns" ||
+    unit.patternSet !== "short_vowels"
+  ) {
+    notFound();
+  }
 
   // Only words with a real picture file may appear on a matching sheet.
   const illustrated = (await artworkInventory()).map((entry) => entry.word);
@@ -48,7 +48,7 @@ export default async function Page({ params }: PageProps) {
           {unit.title}
         </Link>
         <h1 className="font-heading mt-1 text-2xl font-bold sm:text-3xl">
-          {heading}
+          Match the vowel
         </h1>
         <p className="mt-1 text-muted-foreground">
           Reload the page or press New sheet for a fresh set.
@@ -59,7 +59,7 @@ export default async function Page({ params }: PageProps) {
         unit={unit}
         items={unit.items}
         illustrated={illustrated}
-        kind="match"
+        kind="vowel"
         seed={randomSheetSeed()}
       />
     </main>

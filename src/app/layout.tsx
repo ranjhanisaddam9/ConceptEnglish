@@ -44,7 +44,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // instance), which React would otherwise report as a mismatch. Real
     // mismatches inside the app still surface.
     <html
-      lang="en"
+      // British English throughout: the sound buttons default to en-GB, and
+      // this is what tells a screen reader, a spellchecker and the browser's
+      // own text-to-speech which English the page is written in.
+      lang="en-GB"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${andika.variable} h-full antialiased`}
     >

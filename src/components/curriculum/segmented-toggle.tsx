@@ -15,6 +15,13 @@ export interface SegmentedOption<T extends string> {
   label: string;
   /** Longer text used as the accessible name and tooltip. */
   description: string;
+  /**
+   * Shown in place of the label.
+   *
+   * The description still carries the meaning for a screen reader and the
+   * tooltip, so an option can be a drawing without becoming unnameable.
+   */
+  icon?: React.ReactNode;
 }
 
 export interface SegmentedToggleProps<T extends string> {
@@ -29,11 +36,13 @@ export interface SegmentedToggleProps<T extends string> {
    * selection itself stays put.
    */
   onReselect?: () => void;
-  size?: "sm" | "lg";
+  size?: keyof typeof SIZE_CLASSES;
   className?: string;
 }
 
 const SIZE_CLASSES = {
+  /** For a single letter or a drawing, where a wide button is just air. */
+  xs: "h-9 min-w-9 px-2 text-sm",
   sm: "h-10 min-w-16 px-4 text-sm sm:min-w-24",
   lg: "h-12 min-w-20 px-4 text-base sm:min-w-28 sm:px-5",
 } as const;
@@ -90,7 +99,7 @@ export function SegmentedToggle<T extends string>({
               "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
             )}
           >
-            {option.label}
+            {option.icon ?? option.label}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>

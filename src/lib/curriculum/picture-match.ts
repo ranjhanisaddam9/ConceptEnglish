@@ -103,6 +103,17 @@ function finalLetter(word: string): string | null {
   return letters ? letters[letters.length - 1] : null;
 }
 
+/**
+ * Words whose last letter is not the last sound.
+ *
+ * "Lamb" ends in b on paper and in /m/ in the mouth. Asking a child to hear
+ * the ending consonant would mark the right answer wrong, so these are never
+ * used as ending questions — they are still fine as starting ones.
+ */
+function hasSilentEnding(word: string): boolean {
+  return /(mb|mn|gn|lm|bt|gh)$/i.test(word.trim());
+}
+
 export interface PictureCandidate {
   id: string;
   picture: { src: string; alt: string };
@@ -147,6 +158,8 @@ export function selectPictureRows(
 
     // Starting: the picture belongs to its own letter. Ending: the picture
     // belongs to whatever letter its word finishes on.
+    if (position === "ending" && hasSilentEnding(example.label)) continue;
+
     const key =
       position === "starting"
         ? (item.secondaryLabel || item.primaryLabel).trim().toLowerCase()

@@ -149,11 +149,20 @@ export interface PatternMatchSheet {
   patterns: Array<{ text: string; colour: string }>;
 }
 
+/**
+ * What the child matches each picture to.
+ *
+ *   pattern — the letters the word is built on ("sh", "-at")
+ *   word    — the whole spelling, which asks them to read it
+ */
+export type MatchAnswer = "pattern" | "word";
+
 export function buildPatternMatchSheet(
   items: ContentItem[],
   illustrated: ReadonlySet<string>,
   seed: number,
   rowCount: number = PATTERN_MATCH_ROW_COUNT,
+  answer: MatchAnswer = "pattern",
 ): PatternMatchSheet {
   const random = mulberry32(seed);
   const chosen = selectPatternRows(items, random, rowCount, { illustrated });
@@ -168,11 +177,55 @@ export function buildPatternMatchSheet(
   return {
     rows,
     patterns: deranged(
-      chosen.map((candidate) => candidate.pattern),
+      chosen.map((candidate) =>
+        answer === "word" ? candidate.word.toLowerCase() : candidate.pattern,
+      ),
       random,
     ).map((text) => ({ text, colour: randomInk(random) })),
   };
 }
+
+/* -------------------------------------------------------------------------
+   Match the picture to its vowel
+   ------------------------------------------------------------------------- */
+
+export interface VowelMatchSheet {
+  rows: Array<{ id: string; picture: { src: string; alt: string } }>;
+  /** The answer column: every vowel once, however many pictures there are. */
+  vowels: Array<{ text: string; colour: string }>;
+}
+
+/**
+ * Pictures down one side, the vowels down the other.
+ *
+ * Unlike the other matching sheets this is many-to-one — several pictures
+ * share a vowel, and that is the exercise. So the vowels are listed once each
+ * rather than shuffled to line up row by row.
+ */
+export function buildVowelMatchSheet(
+  items: ContentItem[],
+  illustrated: ReadonlySet<string>,
+  seed: number,
+  includeOo: boolean,
+  rowCount: number = PATTERN_MATCH_ROW_COUNT,
+): VowelMatchSheet {
+  const random = mulberry32(seed);
+  const chosen = selectPatternRows(items, random, rowCount, { illustrated });
+
+  const vowels = [...SHORT_VOWEL_LETTERS, ...(includeOo ? ["oo"] : [])];
+
+  return {
+    rows: chosen
+      .filter((candidate) => candidate.picture)
+      .map((candidate) => ({
+        id: candidate.id,
+        picture: candidate.picture as { src: string; alt: string },
+      })),
+    vowels: vowels.map((text) => ({ text, colour: randomInk(random) })),
+  };
+}
+
+const SHORT_VOWEL_LETTERS = ["a", "e", "i", "o", "u"];
 
 /* -------------------------------------------------------------------------
    W2 — write the missing pattern
@@ -181,7 +234,14 @@ export function buildPatternMatchSheet(
 /** Millimetres. */
 export const PATTERN_WRITING_LAYOUT = {
   pictureBox: 22,
-  gap: 8,
+  /**
+   * Between the picture and the word.
+   *
+   * Wide, so the two read as a picture and a separate thing to write rather
+   * than one crowded row. Every word starts at the same distance in, which is
+   * what lets a child run down the column reading only the blanks.
+   */
+  gap: 26,
   rowGap: 6,
   rowHeight: 22,
   letterSize: 12,
@@ -209,11 +269,24 @@ export interface PatternSlot {
 
 export interface PatternWritingRow {
   id: string;
-  picture: { src: string; alt: string } | null;
+  picture: { src: string; alt: string };
   word: string;
   slots: PatternSlot[];
   width: number;
   colour: string;
+}
+
+/**
+ * Which letters the child fills in.
+ *
+ *   auto  — the pattern itself, or for a word family the sound in front of it
+ *   vowel — only the vowel, so the question is "which vowel is in this word?"
+ */
+export type WritingBlank = "auto" | "vowel";
+
+/** The vowel letters a family opens with: "at" -> "a", "ook" -> "oo". */
+function familyVowel(family: string): string {
+  return /^[aeiou]+/.exec(family)?.[0] ?? "";
 }
 
 export function buildPatternWritingSheet(
@@ -221,14 +294,16 @@ export function buildPatternWritingSheet(
   illustrated: ReadonlySet<string>,
   seed: number,
   rowCount: number = PATTERN_WRITING_ROW_COUNT,
+  blank: WritingBlank = "auto",
 ): PatternWritingRow[] {
   const random = mulberry32(seed);
   // A picture is a welcome cue here but not the exercise, so an unillustrated
   // word still earns a row — it just prints without one.
+  // The picture is how a child knows which word they are being asked for, so
+  // a row without one is a guess rather than an exercise.
   const chosen = selectPatternRows(items, random, rowCount, {
     illustrated,
     literalOnly: true,
-    needPicture: false,
   });
 
   return chosen.map((candidate) => {
@@ -237,10 +312,22 @@ export function buildPatternWritingSheet(
 
     // A family sheet blanks the sound at the *front* — the family is what
     // stays put, and swapping the opening letter is the whole lesson. Every
-    // other pattern blanks itself.
+    // other pattern blanks itself. A vowel sheet blanks only the vowel,
+    // wherever in the word it falls.
     const family = isFamily(candidate.pattern);
-    const at = family ? 0 : word.indexOf(literal);
-    const blanked = family ? word.slice(0, word.length - literal.length) : literal;
+
+    let at: number;
+    let blanked: string;
+    if (blank === "vowel" && family) {
+      blanked = familyVowel(literal);
+      at = word.length - literal.length;
+    } else if (family) {
+      blanked = word.slice(0, word.length - literal.length);
+      at = 0;
+    } else {
+      blanked = literal;
+      at = word.indexOf(literal);
+    }
 
     // The word laid out slot by slot, with the pattern replaced by one wide
     // blank, so the ruling stops exactly where the word does.
@@ -266,7 +353,7 @@ export function buildPatternWritingSheet(
 
     return {
       id: candidate.id,
-      picture: candidate.picture,
+      picture: candidate.picture as { src: string; alt: string },
       word: candidate.word,
       slots,
       width: offset,
@@ -291,6 +378,91 @@ export const FLUENCY_LAYOUT = {
  * Deliberately without pictures: the point is to read the word, and a picture
  * beside it lets a child name the picture instead.
  */
+export interface FluencyWord {
+  text: string;
+  /** Outline and lettering colour — one hue per word. */
+  colour: string;
+  /** Degrees to lean, so a row of balloons does not look stamped out. */
+  tilt: number;
+}
+
+export interface FluencyGroup {
+  label: string;
+  words: FluencyWord[];
+}
+
+/** How far a balloon may lean either way. */
+const MAX_TILT_DEGREES = 15;
+
+/** How each word is dressed on the family reading sheet. */
+export const WORD_SHAPES = [
+  "plain",
+  "balloon",
+  "cloud",
+  "train",
+  "ufo",
+] as const;
+
+export type WordShape = (typeof WORD_SHAPES)[number];
+
+export const WORD_SHAPE_OPTIONS = [
+  {
+    value: "plain" as const,
+    label: "Boxes",
+    description: "Each word in a plain rounded box",
+  },
+  {
+    value: "balloon" as const,
+    label: "Balloons",
+    description: "Each word floating in a balloon",
+  },
+  {
+    value: "cloud" as const,
+    label: "Clouds",
+    description: "Each word in a cloud — the roomiest shape, and the clearest",
+  },
+  {
+    value: "train" as const,
+    label: "Train",
+    description: "The family as a train, one carriage per word",
+  },
+  {
+    value: "ufo" as const,
+    label: "Spaceships",
+    description: "Each word riding in the window of a flying saucer",
+  },
+];
+
+/**
+ * The same words, kept in their families and ordered by opening consonant.
+ *
+ * Reading "cab jab lab" together is a different exercise from reading them
+ * scattered: the child sees the ending hold still while the front sound
+ * changes, which is the whole point of a family. Sorting rather than shuffling
+ * makes that visible down the line as well as across it, so the word order is
+ * fixed; only the colour and lean of each balloon are dealt fresh.
+ */
+export function buildFluencyGroups(
+  items: ContentItem[],
+  seed: number,
+): FluencyGroup[] {
+  const random = mulberry32(seed);
+
+  return items
+    .map((item) => ({
+      label: item.primaryLabel,
+      words: item.examples
+        .map((example) => example.label.toLowerCase())
+        .sort((a, b) => a.localeCompare(b))
+        .map((text) => ({
+          text,
+          colour: randomInk(random),
+          tilt: (random() * 2 - 1) * MAX_TILT_DEGREES,
+        })),
+    }))
+    .filter((group) => group.words.length > 0);
+}
+
 export function buildFluencyGrid(items: ContentItem[], seed: number): string[] {
   const random = mulberry32(seed);
   const words = [

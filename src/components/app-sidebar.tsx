@@ -37,7 +37,10 @@ import { cn } from "@/lib/utils";
  */
 
 export interface AppSidebarProps {
-  units: Pick<Unit, "id" | "title" | "slug" | "kind" | "letterGroup">[];
+  units: Pick<
+    Unit,
+    "id" | "title" | "slug" | "kind" | "letterGroup" | "patternSet"
+  >[];
 }
 
 export function AppSidebar({ units }: AppSidebarProps) {
@@ -234,26 +237,33 @@ function worksheetsFor(unit: AppSidebarProps["units"][number], unitHref: string)
         ? [
             {
               href: `${unitHref}/worksheet/identify`,
-              label: `W1: Identify ${letterGroupNoun(unit.letterGroup)}`,
+              label: `Identify ${letterGroupNoun(unit.letterGroup)}`,
             },
           ]
         : [];
-      const n = sheets.length;
-      return [
-        ...sheets,
+      // A word-family unit matches pictures to whole spellings, and gets a
+      // sheet asking only for the vowel.
+      const isFamilyUnit = unit.patternSet === "short_vowels";
+      const rest = [
+        // Identifying the vowel comes before matching a whole spelling.
+        ...(isFamilyUnit
+          ? [{ href: `${unitHref}/worksheet/match-vowel`, label: "Match Vowel" }]
+          : []),
         {
           href: `${unitHref}/worksheet/pattern-match`,
-          label: `W${n + 1}: Match pictures`,
+          label: isFamilyUnit ? "Match Spell" : "Match pictures",
         },
         {
           href: `${unitHref}/worksheet/pattern-write`,
-          label: `W${n + 2}: Write the letters`,
+          label: "Write the letters",
         },
-        {
-          href: `${unitHref}/worksheet/fluency`,
-          label: `W${n + 3}: Read the words`,
-        },
+        { href: `${unitHref}/worksheet/fluency`, label: "Read the words" },
       ];
+
+      return [...sheets, ...rest].map((sheet, index) => ({
+        ...sheet,
+        label: `W${index + 1}: ${sheet.label}`,
+      }));
     }
     case "phonics": {
       // A phonics unit names its sheets after the letters it covers, so a
