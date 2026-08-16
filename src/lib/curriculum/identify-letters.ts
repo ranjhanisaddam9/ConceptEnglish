@@ -29,13 +29,15 @@ export const IDENTIFY_TARGET_OPTIONS = [
 /**
  * Millimetres, except `columns`.
  *
- * Cells are generous because a sheet holds the alphabet once over — 26 letters
- * rather than a full grid — so there is room to spare on the page.
+ * Three letters to a line, which at 26 letters comes to nine rows — so the
+ * rows are shallow enough for all nine to fit one page under the header.
  */
 export const IDENTIFY_LAYOUT = {
-  columns: 6,
-  rowHeight: 38,
-  rowGap: 6,
+  columns: 3,
+  rowHeight: 20,
+  rowGap: 5,
+  /** The circle a tap draws around a letter. */
+  ring: 18,
 } as const;
 
 const ROW_PITCH = IDENTIFY_LAYOUT.rowHeight + IDENTIFY_LAYOUT.rowGap;

@@ -207,13 +207,15 @@
 }
 
 /* ---------------------------------------------------------------------------
-   The gap being asked about.
+   Something on a worksheet growing and settling back.
 
-   Where a sheet is answered top to bottom, the gap holding the current
-   question breathes so a child can see which one is waiting on them. The
+   Used two ways. A gap being asked about pulses without stopping, so a child
+   answering top to bottom can see which question is waiting on them — the
    colour marks it too, so with motion turned off it is still the odd one out.
+   A letter that can be tapped pulses once under the pointer instead, which
+   says "this one answers back" without anything moving on its own.
    --------------------------------------------------------------------------- */
-@keyframes blank-pulse {
+@keyframes pulse-grow {
   0%,
   100% {
     transform: scale(1);
@@ -225,7 +227,11 @@
 
 @media (prefers-reduced-motion: no-preference) {
   [data-blank-pulse] {
-    animation: blank-pulse 1200ms ease-in-out infinite;
+    animation: pulse-grow 1200ms ease-in-out infinite;
+  }
+
+  [data-hover-pulse]:hover {
+    animation: pulse-grow 420ms ease-in-out;
   }
 }
 

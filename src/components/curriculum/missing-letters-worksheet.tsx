@@ -3,6 +3,7 @@
 import { Fragment, useMemo, useState, type CSSProperties } from "react";
 import { Printer } from "lucide-react";
 
+import { AnswerMark } from "@/components/curriculum/answer-mark";
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
 import { Button } from "@/components/ui/button";
@@ -198,36 +199,6 @@ function GapBox({
   );
 }
 
-/** The tick or cross beside an answered question. */
-function AnswerMark({
-  answer,
-  className,
-  style,
-}: {
-  answer: GapAnswer;
-  className?: string;
-  style?: CSSProperties;
-}) {
-  return (
-    <span
-      // Remounted per letter so a second wrong guess pops the cross again
-      // rather than leaving the first one sitting there.
-      key={answer.letter}
-      data-answer-mark
-      aria-live="polite"
-      className={cn(
-        "absolute text-center leading-none font-bold print:hidden",
-        answer.correct ? "text-green-600" : "text-red-600",
-        className,
-      )}
-      style={style}
-    >
-      {answer.correct ? "✓" : "✗"}
-      <span className="sr-only">{answer.correct ? "Correct" : "Try again"}</span>
-    </span>
-  );
-}
-
 /**
  * Answering a sheet's gaps, one at a time and in reading order.
  *
@@ -308,7 +279,8 @@ function QuestionRow({
     >
       {answer && (
         <AnswerMark
-          answer={answer}
+          correct={answer.correct}
+          popKey={answer.letter}
           className="top-1/2 -translate-y-1/2"
           style={{ left: "-9mm", width: "8mm", fontSize: "7mm" }}
         />
@@ -548,7 +520,8 @@ function AnswerableAlphabet({ lines }: { lines: MissingCell[][] }) {
                     the gap rather than out in the margin. */}
                 {answer && (
                   <AnswerMark
-                    answer={answer}
+                    correct={answer.correct}
+                    popKey={answer.letter}
                     style={{
                       left: `${gapLeft(index) + MISSING_LAYOUT.entireBlankWidth - 1}mm`,
                       top: "-1.5mm",
