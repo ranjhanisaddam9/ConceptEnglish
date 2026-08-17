@@ -71,6 +71,11 @@ export interface RulingGeometry {
  * Shared by the letter card and the worksheet so the two can never drift
  * apart. Units are whatever the caller is working in — the card uses
  * arbitrary SVG units, the worksheet uses millimetres.
+ *
+ * The lines are placed by the letters rather than spaced evenly: the middle
+ * line marks the x-height, so small letters sit under it, and the bottom line
+ * marks the descender depth, so a 'p' or a 'g' reaches it. Evenly spacing the
+ * four was tried and reverted — it costs both of those.
  */
 export function rulingGeometry(fontSize: number, padding = 0): RulingGeometry {
   const baseline = padding + FONT_METRICS.ascender * fontSize;

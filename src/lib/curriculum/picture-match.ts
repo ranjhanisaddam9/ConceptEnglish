@@ -1,7 +1,12 @@
 import { itemLabel } from "./display";
 import { mulberry32, shuffled } from "./sheet-order";
 import type { ContentItem, LabelMode } from "./types";
-import { PAGE, randomInk } from "./worksheet";
+import {
+  CONTENT_WIDTH,
+  PAGE,
+  WORD_SOUND_COLUMN,
+  randomUnreservedInk,
+} from "./worksheet";
 
 /**
  * "Match the picture to its letter" worksheet.
@@ -43,7 +48,16 @@ export const PICTURE_MATCH_LAYOUT = {
   rowHeight: 26,
   rowGap: 6,
   /** The dot each line is drawn from and to. */
-  anchorRadius: 1.6,
+  anchorRadius: 2.4,
+  /**
+   * Gap between a dot and what it belongs to — the picture on the left, the
+   * letter on the right.
+   *
+   * A dot flush against its picture reads as part of it. Standing it off makes
+   * it the end of the line rather than the edge of the box, which is also what
+   * gives a finger somewhere to land that is not the picture.
+   */
+  anchorInset: 3,
 } as const;
 
 const ROW_PITCH =
@@ -52,6 +66,44 @@ const ROW_PITCH =
 export const PICTURE_MATCH_ROW_COUNT = Math.floor(
   (PAGE.height - PAGE.margin * 2 - PAGE.headerHeight) / ROW_PITCH,
 );
+
+/**
+ * Where the anchor dots fall on the page, in millimetres.
+ *
+ * Every width on this sheet is fixed — picture, dot, letter, and the blank
+ * middle that is whatever is left — so a line between any two dots can be
+ * worked out from the layout instead of measured off the rendered page. The
+ * overlay that draws those lines uses millimetres as its user units, so these
+ * numbers go straight into it.
+ */
+export const PICTURE_MATCH_GEOMETRY = {
+  width: CONTENT_WIDTH,
+  /**
+   * Centre of the dot beside a picture.
+   *
+   * Counting the sound button that opens each row on screen. That column is
+   * print:hidden, and so is the overlay these numbers are for, so the two are
+   * only ever both present or both absent.
+   */
+  leftX:
+    WORD_SOUND_COLUMN +
+    PICTURE_MATCH_LAYOUT.pictureBox +
+    PICTURE_MATCH_LAYOUT.anchorInset +
+    PICTURE_MATCH_LAYOUT.anchorRadius,
+  /** Centre of the dot beside a letter. */
+  rightX:
+    CONTENT_WIDTH -
+    PICTURE_MATCH_LAYOUT.letterBox -
+    PICTURE_MATCH_LAYOUT.anchorInset -
+    PICTURE_MATCH_LAYOUT.anchorRadius,
+  /** Centre of a row, counting the gap left above the first one. */
+  rowCentreY: (index: number) =>
+    PICTURE_MATCH_LAYOUT.rowGap +
+    index * ROW_PITCH +
+    PICTURE_MATCH_LAYOUT.rowHeight / 2,
+  /** Height of the whole column of rows, padding included. */
+  height: (rowCount: number) => rowCount * ROW_PITCH,
+} as const;
 
 export interface PictureMatchRow {
   id: string;
@@ -65,6 +117,13 @@ export interface PictureMatchSheet {
   rows: PictureMatchRow[];
   /** Right-hand column: the same letters in a different order. */
   letters: Array<{ text: string; colour: string }>;
+  /**
+   * One colour per row, worn by both dots on it.
+   *
+   * A pairing, not a clue: the letters are deranged, so the dot level with a
+   * picture is never that picture's answer.
+   */
+  anchorColours: string[];
 }
 
 /**
@@ -156,6 +215,12 @@ export function selectPictureRows(
     const example = item.examples.find(entry => entry.imageUrl);
     if (!example?.imageUrl) continue;
 
+    // A letter whose sound is taught at the end of a word has no picture that
+    // begins with it — x is taught through box, fox and six (see soundAtEnd in
+    // content/curriculum.ts). Asking which letter Box begins with and then
+    // marking X right teaches the opposite of what the sheet asks.
+    if (position === "starting" && item.tags.includes("ending-sound")) continue;
+
     // Starting: the picture belongs to its own letter. Ending: the picture
     // belongs to whatever letter its word finishes on.
     if (position === "ending" && hasSilentEnding(example.label)) continue;
@@ -202,7 +267,7 @@ export function buildPictureMatchSheet(
   const byLetter = lettersByKey(items);
   const chosen = selectPictureRows(items, group, position, random, rowCount);
 
-  if (chosen.length === 0) return { rows: [], letters: [] };
+  if (chosen.length === 0) return { rows: [], letters: [], anchorColours: [] };
 
   const rows: PictureMatchRow[] = chosen.map((candidate) => {
     const item = byLetter.get(candidate.key);
@@ -217,9 +282,13 @@ export function buildPictureMatchSheet(
 
   return {
     rows,
+    // Unreserved ink rather than the usual random: this sheet marks itself in
+    // green and red, and a letter in either sitting beside its own tick is the
+    // one thing on the page that could be read as a verdict.
     letters: deranged(
       rows.map((row) => row.letter),
       random,
-    ).map((text) => ({ text, colour: randomInk(random) })),
+    ).map((text) => ({ text, colour: randomUnreservedInk(random) })),
+    anchorColours: rows.map(() => randomUnreservedInk(random)),
   };
 }

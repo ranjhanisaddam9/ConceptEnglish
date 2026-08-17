@@ -76,16 +76,22 @@ const DROP_LOWEST_DOT = new Set(["i", "F"]);
 /**
  * Letters that drop the lowest dot on *each* side of their centre.
  *
- * An 'A' needs one gone from the foot of each leg. Taking the two lowest dots
- * overall would not do it: its feet sit at different heights (-0.010em on the
- * left against -0.065em on the right), and the left leg has a second dot level
- * with the right foot, so a tie could strip two dots from one leg and none
- * from the other.
- *
- * Only applied to single-letter glyphs — in a paired "Aa" the two halves are
- * different letters, and the rule would take a dot off the 'a' as well.
+ * An 'A' needs one gone from the foot of each leg, where the medial axis bends
+ * outwards into the terminal and leaves a dot wide of the line the child is
+ * meant to draw. Applied per letter rather than per glyph — see withoutFeet —
+ * so a paired "Aa" loses the feet of its 'A' and nothing off the 'a'.
  */
 const DROP_LOWEST_EACH_SIDE = new Set(["A"]);
+
+/**
+ * How far the right leg of a capital A is pulled back off its flare, in em.
+ *
+ * Where that leg meets the baseline the medial axis bends outwards into the
+ * terminal, leaving the last dot sitting wide of the line the child is meant
+ * to draw down. Small — a fifth of the gap between dots — so the leg reads as
+ * straight rather than as bending the other way.
+ */
+const A_FOOT_NUDGE = 0.02;
 
 /** A turn sharper than this counts as a corner and always gets its own dot. */
 const CORNER_ANGLE = (50 * Math.PI) / 180;
@@ -626,7 +632,7 @@ function drawGlyph(
   request: SkeletonRequest,
   centreX: number,
   baselineY: number,
-) {
+): GlyphRun[] {
   const runs = splitByCase(request.glyph).map((text) => ({
     text,
     size: isUppercaseRun(text) ? RASTER * request.capitalScale : RASTER,
@@ -644,12 +650,57 @@ function drawGlyph(
     total += run.width;
   }
 
+  const drawn: GlyphRun[] = [];
   let x = centreX - total / 2;
   for (const run of runs) {
     ctx.font = `${request.fontWeight} ${run.size}px ${request.fontFamily}`;
     ctx.fillText(run.text, x, baselineY);
+    drawn.push({ text: run.text, from: x, to: x + run.width });
     x += run.width;
   }
+
+  return drawn;
+}
+
+/**
+ * Where each letter of the glyph was drawn.
+ *
+ * A paired "Aa" is two letters on one canvas, and a rule written for one of
+ * them has to be able to say which dots are its own.
+ */
+interface GlyphRun {
+  text: string;
+  from: number;
+  to: number;
+}
+
+/**
+ * Drops the lowest dot on each side of one letter's centre.
+ *
+ * Where a stroke ends, its medial axis bends into the flare of the terminal,
+ * so the feet of an 'A' finish wide of the lines a child is meant to draw.
+ * Taking the two lowest overall would not do it: the feet sit at different
+ * heights, and the left leg has a second dot level with the right foot, so a
+ * tie could strip two dots from one leg and none from the other.
+ */
+function withoutFeet(points: Point[], run: GlyphRun): Point[] {
+  const centre = (run.from + run.to) / 2;
+  const mine = points.filter(([x]) => x >= run.from && x < run.to);
+
+  const lowestOf = (side: Point[]) =>
+    side.reduce<Point | null>(
+      (lowest, point) => (!lowest || point[1] > lowest[1] ? point : lowest),
+      null,
+    );
+
+  const feet = new Set(
+    [
+      lowestOf(mine.filter(([x]) => x < centre)),
+      lowestOf(mine.filter(([x]) => x >= centre)),
+    ].filter((point): point is Point => point !== null),
+  );
+
+  return points.filter((point) => !feet.has(point));
 }
 
 function computeDots(request: SkeletonRequest): SkeletonDot[] {
@@ -665,7 +716,7 @@ function computeDots(request: SkeletonRequest): SkeletonDot[] {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) return [];
 
-  drawGlyph(ctx, request, centreX, baselineY);
+  const runs = drawGlyph(ctx, request, centreX, baselineY);
 
   const pixels = ctx.getImageData(0, 0, width, height).data;
   const bits = new Uint8Array(width * height);
@@ -720,20 +771,63 @@ function computeDots(request: SkeletonRequest): SkeletonDot[] {
       ? [...kept].sort((a, b) => b[1] - a[1]).slice(dropCount)
       : kept;
 
-  if (DROP_LOWEST_EACH_SIDE.has(request.glyph)) {
-    const lowestOf = (side: Point[]) =>
-      side.reduce<Point | null>(
-        (lowest, point) => (!lowest || point[1] > lowest[1] ? point : lowest),
-        null,
-      );
+  // Single-letter glyphs only. Doing this per run would be the way to reach
+  // the 'A' inside a paired "Aa", but a run's territory is its advance width,
+  // and that letter's flared right foot sits outside its own advance — so the
+  // rule finds one foot and not the other. Until a letter's dots can be told
+  // apart from its neighbour's reliably, a pair is left alone.
+  for (const run of runs) {
+    if (runs.length === 1 && DROP_LOWEST_EACH_SIDE.has(run.text)) {
+      ordered = withoutFeet(ordered, run);
+    }
+  }
 
-    const feet = new Set(
-      [
-        lowestOf(ordered.filter(([x]) => x < centreX)),
-        lowestOf(ordered.filter(([x]) => x >= centreX)),
-      ].filter((point): point is Point => point !== null),
+  /*
+   * Finishing the right leg of a capital A.
+   *
+   * Dropping a foot from each side above leaves that leg a dot shorter than
+   * the left — the two feet sit at different heights, so the same rule takes
+   * different amounts off each — and the dot it now ends on is the one bent
+   * outwards by the terminal. So it is pulled back onto the line of its own
+   * stroke, and one more is carried on below it at the leg's own spacing,
+   * which brings the two legs down to the same depth.
+   *
+   * Single-letter glyphs only: in a paired "Aa" the right-hand side of the
+   * glyph is the 'a', which has no leg to finish.
+   */
+  if (request.glyph === "A") {
+    const rightSide = ordered.filter(([x]) => x >= centreX);
+    const foot = rightSide.reduce<Point | null>(
+      (lowest, point) => (!lowest || point[1] > lowest[1] ? point : lowest),
+      null,
     );
-    ordered = ordered.filter((point) => !feet.has(point));
+
+    // The dot above it *along the leg*, found by nearness rather than by
+    // height: the right-hand end of the crossbar is higher than the foot but
+    // nothing to do with the leg, and measuring the step to that would send
+    // the new dot off sideways.
+    const above =
+      foot &&
+      rightSide
+        .filter((point) => point !== foot)
+        .reduce<Point | null>((nearest, point) => {
+          const gap = Math.hypot(point[0] - foot[0], point[1] - foot[1]);
+          if (!nearest) return point;
+          return gap < Math.hypot(nearest[0] - foot[0], nearest[1] - foot[1])
+            ? point
+            : nearest;
+        }, null);
+
+    if (foot && above) {
+      // Measured before the nudge, so the added dot carries on down the leg
+      // rather than along the correction.
+      const step: Point = [foot[0] - above[0], foot[1] - above[1]];
+      const pulledIn: Point = [foot[0] - A_FOOT_NUDGE * RASTER, foot[1]];
+
+      ordered = ordered
+        .map((point) => (point === foot ? pulledIn : point))
+        .concat([[pulledIn[0] + step[0], pulledIn[1] + step[1]]]);
+    }
   }
 
   return ordered.map(([x, y]) => ({

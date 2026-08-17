@@ -1,3 +1,5 @@
+import { itemLabel } from "./display";
+import { gapQuestion, type GapQuestion } from "./gap-question";
 import { mulberry32 } from "./sheet-order";
 import {
   selectPictureRows,
@@ -56,6 +58,14 @@ export interface WritingRow {
   width: number;
   /** One colour for the whole word, so it still reads as a word. */
   colour: string;
+  /**
+   * The row's single blank, as a question that can be answered on screen.
+   *
+   * On paper the child writes the letter; on screen they choose it from a
+   * handful, the same way Unit 1's missing-letters sheet asks. A row has one
+   * blank, so it has exactly one of these.
+   */
+  gap: GapQuestion;
 }
 
 function caseWord(word: string, labelMode: LabelMode): string {
@@ -93,6 +103,13 @@ export function buildWritingSheet(
   const random = mulberry32(seed);
   const chosen = selectPictureRows(items, group, position, random, rowCount);
 
+  // The letters a gap's wrong answers are drawn from: this unit's own, in
+  // whichever case the sheet is set to, so an uppercase sheet never offers a
+  // lowercase choice.
+  const labels = items
+    .filter((item) => item.tags.includes(group))
+    .map((item) => itemLabel(item, labelMode));
+
   return chosen
     .map((candidate) => {
       const characters = [...caseWord(candidate.picture.alt, labelMode)];
@@ -118,6 +135,16 @@ export function buildWritingSheet(
         slots,
         width: offset,
         colour: randomInk(random),
+        gap: gapQuestion(
+          candidate.id,
+          characters[blankIndex],
+          labels,
+          // The rest of the word is on show beside the gap, so offering one of
+          // its letters back would be offering something the child can already
+          // see is taken.
+          new Set(characters.filter((_, index) => index !== blankIndex)),
+          random,
+        ),
       };
     })
     .filter((row): row is WritingRow => row !== null);

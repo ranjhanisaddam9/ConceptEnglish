@@ -1,6 +1,7 @@
+import { gapQuestion, type GapQuestion } from "./gap-question";
 import { mulberry32, shuffled } from "./sheet-order";
 import type { ContentItem } from "./types";
-import { PAGE, randomInk } from "./worksheet";
+import { PAGE, randomInk, randomUnreservedInk } from "./worksheet";
 import { rulingGeometry } from "./writing";
 
 /**
@@ -28,6 +29,43 @@ function literalLetters(pattern: string): string {
 /** Whether the pattern is a word family — an ending words are built onto. */
 function isFamily(pattern: string): boolean {
   return pattern.startsWith("-");
+}
+
+/**
+ * A pattern that describes a shape rather than spelling any letters.
+ *
+ * "VCe" is the only one: it names the magic-e rule, and no word contains those
+ * letters. Printed as an answer it asks a child to match a picture to a piece
+ * of grammar, and blanked out of a spelling there is nothing to rub out — so
+ * on a worksheet each of its words stands for its own ending instead.
+ */
+function isShapePattern(pattern: string): boolean {
+  return pattern.toLowerCase() === "vce";
+}
+
+/**
+ * The ending a magic-e word rhymes on — "plate" → "ate", "game" → "ame".
+ *
+ * A VCe word is exactly vowel-consonant-e at its end, so the last three
+ * letters are the family, and that is what a child is really being asked for.
+ */
+function vceFamily(word: string): string {
+  return word.toLowerCase().slice(-3);
+}
+
+/**
+ * What a word stands for on a worksheet: its own ending where the unit teaches
+ * a shape, and the unit's pattern everywhere else.
+ */
+function worksheetPattern(pattern: string, word: string): string {
+  return isShapePattern(pattern) ? vceFamily(word) : pattern;
+}
+
+/** The answers a pattern can offer a choosing sheet. */
+function patternChoices(item: ContentItem): string[] {
+  return isShapePattern(item.primaryLabel)
+    ? item.examples.map((example) => vceFamily(example.label))
+    : [literalLetters(item.primaryLabel)];
 }
 
 export interface PatternCandidate {
@@ -72,8 +110,12 @@ export function selectPatternRows(
     .map((item) => {
       const pattern = item.primaryLabel.toLowerCase();
       const literal = literalLetters(pattern);
+      // A shape pattern's words each stand for their own ending, which they
+      // obviously contain — so they are all usable however strict the sheet is.
+      const shape = isShapePattern(pattern);
       const usable = item.examples.filter((example) => {
         if (needPicture && !hasPicture(example.label)) return false;
+        if (shape) return true;
         return !literalOnly || example.label.toLowerCase().includes(literal);
       });
 
@@ -85,7 +127,7 @@ export function selectPatternRows(
               ? { src: example.imageUrl, alt: example.label }
               : null,
           word: example.label,
-          pattern: item.primaryLabel,
+          pattern: worksheetPattern(item.primaryLabel, example.label),
         }),
       );
     })
@@ -153,6 +195,13 @@ export interface PatternMatchRow {
   /** How many letters the blank stands for; 0 when the pattern is not
    *  spelled out in the word, as with "VCe". */
   blankLength: number;
+  /**
+   * The pattern this picture is built on — this row's answer.
+   *
+   * Only wanted on screen, where the sheet marks itself; on paper the child
+   * rules a line and a teacher checks it.
+   */
+  pattern: string;
 }
 
 export interface PatternMatchSheet {
@@ -184,6 +233,7 @@ export function buildPatternMatchSheet(
         before: at < 0 ? "" : word.slice(0, at),
         after: at < 0 ? "" : word.slice(at + literal.length),
         blankLength: at < 0 ? 0 : literal.length,
+        pattern: candidate.pattern,
       };
     });
 
@@ -208,12 +258,28 @@ export interface VowelMatchRow {
   after: string;
   /** How many letters the blank stands for — "oo" needs a wider gap. */
   blankLength: number;
+  /**
+   * The vowel taken out — this row's answer.
+   *
+   * Only wanted on screen, where the sheet marks itself; on paper the child
+   * rules a line and a teacher checks it.
+   */
+  vowel: string;
 }
 
 export interface VowelMatchSheet {
   rows: VowelMatchRow[];
   /** The answer column: every vowel once, however many pictures there are. */
   vowels: Array<{ text: string; colour: string }>;
+  /**
+   * The colour of the dot beside each picture.
+   *
+   * The two columns hold different numbers of things here, so unlike Unit 2's
+   * matching sheet there is no dot opposite to share a colour with — each
+   * picture's dot simply gets its own. Unreserved ink, because the lines drawn
+   * from these dots land green or red.
+   */
+  anchorColours: string[];
 }
 
 /**
@@ -234,10 +300,11 @@ export function buildVowelMatchSheet(
   const chosen = selectPatternRows(items, random, rowCount, { illustrated });
 
   const vowels = [...SHORT_VOWEL_LETTERS, ...(includeOo ? ["oo"] : [])];
+  const illustratedRows = chosen.filter((candidate) => candidate.picture);
 
   return {
-    rows: chosen
-      .filter((candidate) => candidate.picture)
+    anchorColours: illustratedRows.map(() => randomUnreservedInk(random)),
+    rows: illustratedRows
       .map((candidate) => {
         // The family is the tail of the word, and its vowel opens it, so both
         // fall out of the spelling without being stored.
@@ -252,6 +319,7 @@ export function buildVowelMatchSheet(
           before: word.slice(0, at),
           after: word.slice(at + vowel.length),
           blankLength: vowel.length || 1,
+          vowel,
         };
       }),
     vowels: vowels.map((text) => ({ text, colour: randomInk(random) })),
@@ -272,8 +340,14 @@ export interface ChoiceRow {
   blankLength: number;
   /** The right answer, so a teacher's copy could mark it later. */
   answer: string;
-  /** What this row offers — always including its own answer. */
-  options: string[];
+  /**
+   * What this row offers — always including its own answer.
+   *
+   * Each carries its own ink, the way Unit 1's matching sheet colours the
+   * letters it offers: on paper it is what the child rings or colours in, and
+   * on screen it is what a chosen option is drawn in.
+   */
+  options: Array<{ text: string; colour: string }>;
 }
 
 export interface ChoiceSheet {
@@ -308,9 +382,11 @@ export function buildChoiceSheet(
   });
 
   // What every row draws its choices from.
+  // A magic-e item contributes every ending its words carry rather than the
+  // bare "VCe", so a wrong answer offered here is a real spelling too.
   const pool = isFamilyUnit
     ? [...SHORT_VOWEL_LETTERS]
-    : [...new Set(items.map((item) => item.primaryLabel))];
+    : [...new Set(items.flatMap(patternChoices))];
   const fixed = pool.length <= CHOICES_PER_ROW;
   const inOrder = [...pool].sort((a, b) => a.localeCompare(b));
 
@@ -340,7 +416,9 @@ export function buildChoiceSheet(
       after: word.slice(at + answer.length),
       blankLength: answer.length,
       answer,
-      options: fixed ? inOrder : shuffled([answer, ...others], random),
+      options: (fixed ? inOrder : shuffled([answer, ...others], random)).map(
+        (text) => ({ text, colour: randomInk(random) }),
+      ),
     };
   });
 
@@ -394,6 +472,13 @@ export interface PatternWritingRow {
   slots: PatternSlot[];
   width: number;
   colour: string;
+  /**
+   * The row's single blank, as a question that can be answered on screen.
+   *
+   * On paper the child writes the letters; on screen they choose them from a
+   * handful, the same way Unit 2's writing sheet asks.
+   */
+  gap: GapQuestion;
 }
 
 /**
@@ -425,6 +510,14 @@ export function buildPatternWritingSheet(
     illustrated,
     literalOnly: true,
   });
+
+  // What a gap's wrong answers are drawn from: the five vowels where the sheet
+  // asks which vowel a word carries, and otherwise the unit's own patterns —
+  // the same letters the child would have to choose between on paper.
+  const pool =
+    blank === "vowel"
+      ? [...SHORT_VOWEL_LETTERS]
+      : [...new Set(items.flatMap(patternChoices))];
 
   return chosen.map((candidate) => {
     const word = candidate.word.toLowerCase();
@@ -478,6 +571,16 @@ export function buildPatternWritingSheet(
       slots,
       width: offset,
       colour: randomInk(random),
+      gap: gapQuestion(
+        candidate.id,
+        blanked,
+        pool,
+        // The rest of the word is spelled out either side of the gap, so
+        // offering one of its letters back would be offering something the
+        // child can already see is taken.
+        new Set([...word.slice(0, at), ...word.slice(at + blanked.length)]),
+        random,
+      ),
     };
   });
 }

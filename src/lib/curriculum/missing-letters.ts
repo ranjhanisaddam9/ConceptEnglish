@@ -1,4 +1,5 @@
 import { itemLabel } from "./display";
+import { gapQuestion, type GapQuestion } from "./gap-question";
 import { mulberry32, shuffled } from "./sheet-order";
 import type { ContentItem, LabelMode } from "./types";
 import { PAGE, ROW_RULING, randomInk } from "./worksheet";
@@ -59,32 +60,6 @@ const LINE_RUN = { standard: 5, both: 3 } as const;
  */
 const LINE_BLANKS = { standard: 1, both: 1 } as const;
 
-/**
- * How many letters are offered when a gap is answered on screen: the right one
- * and four wrong ones.
- */
-const SUGGESTION_COUNT = 5;
-
-/**
- * A gap the child can answer on screen.
- *
- * Both question shapes are made of gaps, and a gap is answered the same way in
- * either, so both builders hang one of these off every blank they produce.
- * None of it prints — see the worksheet component.
- */
-export interface GapQuestion {
-  id: string;
-  /** The letter belonging in the gap. */
-  answer: string;
-  /** The answer and four wrong letters, shuffled. */
-  options: string[];
-  /**
-   * The colour the gap is asked and answered in. Drawn from the sheet's seed
-   * like every other colour here, so a sheet always asks in the same colours.
-   */
-  colour: string;
-}
-
 export type MissingCell =
   | { kind: "letter"; text: string; colour: string }
   | { kind: "blank"; question: GapQuestion };
@@ -106,32 +81,6 @@ function blank(question: GapQuestion): MissingCell {
 
 function letter(text: string, random: () => number): MissingCell {
   return { kind: "letter", text, colour: randomInk(random) };
-}
-
-/**
- * Builds the question for one gap.
- *
- * The wrong letters come from the rest of the unit, never from what is already
- * on show around the gap: a letter the child can see is not a real choice.
- */
-function gapQuestion(
-  id: string,
-  answer: string,
-  labels: string[],
-  shown: Set<string>,
-  random: () => number,
-): GapQuestion {
-  const distractors = shuffled(
-    labels.filter((label) => label !== answer && !shown.has(label)),
-    random,
-  ).slice(0, SUGGESTION_COUNT - 1);
-
-  return {
-    id,
-    answer,
-    options: shuffled([answer, ...distractors], random),
-    colour: randomInk(random),
-  };
 }
 
 /** Picks `count` distinct indexes below `length`. */

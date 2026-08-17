@@ -16,6 +16,10 @@ import { cn } from "@/lib/utils";
  */
 
 const SIZE_CLASSES = {
+  // Worksheet sizes. Small enough to sit in a row beside a question without
+  // becoming the thing a child reaches for first.
+  xs: "size-7 [&_svg]:size-3.5",
+  sm: "size-9 [&_svg]:size-4",
   md: "size-12 [&_svg]:size-5",
   lg: "size-16 [&_svg]:size-7",
   xl: "size-20 [&_svg]:size-9",

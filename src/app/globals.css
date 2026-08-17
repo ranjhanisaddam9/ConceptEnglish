@@ -100,6 +100,13 @@
      always white paper, whatever theme the screen is using. */
   --worksheet-ink: oklch(0.2 0 0);
   --worksheet-guide: oklch(0.78 0 0);
+
+  /* Right and wrong, wherever a sheet answers back on screen. The same green
+     and red the tick and the cross are drawn in, so a line and the mark at the
+     end of it agree. Nothing decorative on a sheet may use these hues — see
+     randomUnreservedInk in lib/curriculum/worksheet.ts. */
+  --worksheet-right: oklch(0.627 0.194 149.214);
+  --worksheet-wrong: oklch(0.577 0.245 27.325);
 }
 
 .dark {
@@ -232,6 +239,99 @@
 
   [data-hover-pulse]:hover {
     animation: pulse-grow 420ms ease-in-out;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The dot on a matching sheet that is waiting to be tapped.
+
+   A bigger swing than pulse-grow's, because it has to carry further: the dots
+   run down the two edges of an A4 sheet rather than sitting inside a question,
+   and a child scanning the page needs to see from the other side of it which
+   column is asking. Slow enough to read as breathing rather than blinking.
+   --------------------------------------------------------------------------- */
+@keyframes anchor-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.6);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   An answer being aimed at on a matching sheet.
+
+   The answer is one target made of several parts — a dot, and the letter or
+   shape beside it — so hovering any of it lights up all of it. Scoped to
+   :enabled, which on these sheets means a line is actually out: with nothing
+   to aim, hovering an answer says nothing.
+
+   Still short of the dot's own swing, because a letter is many times the size
+   of a dot and matching it would throw the row about — but big enough to read
+   from across the page as the thing the line is pointed at.
+   --------------------------------------------------------------------------- */
+@keyframes option-face-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-match-option]:enabled:hover [data-option-face] {
+    animation: option-face-pulse 1100ms ease-in-out infinite;
+  }
+
+  [data-match-option]:enabled:hover [data-anchor-dot] {
+    animation: anchor-pulse 1100ms ease-in-out infinite;
+  }
+}
+
+/* The dot that drops into the ring once it has been tapped. */
+@keyframes anchor-fill {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-anchor-pulse] {
+    animation: anchor-pulse 1100ms ease-in-out infinite;
+  }
+
+  [data-anchor-fill] {
+    animation: anchor-fill 180ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   A line drawn between two dots on a matching sheet.
+
+   It runs out from the picture's dot to the letter's rather than appearing
+   whole, which is the same gesture the child makes with a pencil on the
+   printed sheet. The lines set pathLength="1", so one dash offset covers every
+   length; with motion turned off the line is simply there, already ruled.
+   --------------------------------------------------------------------------- */
+@keyframes line-stretch {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-match-line] {
+    animation: line-stretch 320ms ease-out both;
   }
 }
 

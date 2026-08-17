@@ -74,6 +74,59 @@ export function randomInk(random: () => number): string {
   return `oklch(${INK_LIGHTNESS} ${INK_CHROMA} ${Math.floor(random() * 360)})`;
 }
 
+/**
+ * The stretches of the hue circle left over once marking has taken its two.
+ *
+ * Green means right and red means wrong wherever a sheet answers back, so a
+ * colour chosen for decoration has to keep clear of both or it reads as a
+ * verdict. Forty degrees either side of each is cut out rather than the bare
+ * minimum: a hue that merely borders green is a chartreuse a child glances at
+ * and calls green. What is left is a band of ambers, and then everything from
+ * teal round through blue and purple to pink.
+ */
+const UNRESERVED_HUE_SPANS = [
+  { start: 67, width: 42 },
+  { start: 189, width: 158 },
+];
+
+/**
+ * A random ink colour that cannot be mistaken for a mark.
+ *
+ * Picked evenly across what the spans above leave, so the colours come out as
+ * varied as randomInk's, minus the two families that mean something.
+ */
+export function randomUnreservedInk(random: () => number): string {
+  const total = UNRESERVED_HUE_SPANS.reduce(
+    (sum, span) => sum + span.width,
+    0,
+  );
+
+  let offset = random() * total;
+  let hue = UNRESERVED_HUE_SPANS[0].start;
+  for (const span of UNRESERVED_HUE_SPANS) {
+    if (offset < span.width) {
+      hue = span.start + offset;
+      break;
+    }
+    offset -= span.width;
+  }
+
+  return `oklch(${INK_LIGHTNESS} ${INK_CHROMA} ${Math.floor(hue)})`;
+}
+
+/**
+ * The screen-only column holding a row's "say this word" button, in
+ * millimetres.
+ *
+ * Fixed rather than left to the button's own size so a sheet that works out
+ * its geometry from these constants — Unit 2's matching sheet draws its lines
+ * that way — knows exactly how far the row's contents have been pushed along.
+ * See components/curriculum/word-sound.
+ */
+export const WORD_SOUND_WIDTH = 9;
+export const WORD_SOUND_GAP = 3;
+export const WORD_SOUND_COLUMN = WORD_SOUND_WIDTH + WORD_SOUND_GAP;
+
 /** Matches the font stack applied by the `font-letter` utility. */
 export const LETTER_FONT_FAMILY = "Andika";
 
