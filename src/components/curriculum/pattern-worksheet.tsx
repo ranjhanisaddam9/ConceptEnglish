@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Printer, Shuffle } from "lucide-react";
 
 import { AnswerMark } from "@/components/curriculum/answer-mark";
+import { ToolbarCheckbox, WorksheetToolbar } from "@/components/curriculum/worksheet-toolbar";
 import {
   GAP_BOX_PADDING,
   GapBox,
@@ -18,8 +18,6 @@ import { StepButton } from "@/components/curriculum/step-button";
 import { WordShapeMark } from "@/components/curriculum/word-shape";
 import { WordSound } from "@/components/curriculum/word-sound";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   PATTERN_MATCH_LAYOUT,
   PATTERN_WRITING_LAYOUT,
@@ -80,7 +78,9 @@ const LETTER_CATEGORY = "letter";
 const BLEND_SET_OPTIONS = [
   {
     value: "random" as const,
-    label: "Random",
+    // Not "Random": the sheet deliberately holds s-blends back, which is the
+    // one thing a random draw would not do.
+    label: "Mixed",
     description: "A spread of blends, holding s ones back",
   },
   {
@@ -126,12 +126,23 @@ const SHAPE_OPTIONS_WITH_ICONS = WORD_SHAPE_OPTIONS.map((option) => ({
     <WordShapeMark
       word=""
       shape={option.value}
-      widthMm={8}
+      widthMm={11}
       colour="currentColor"
       tilt={0}
     />
   ),
 }));
+
+/**
+ * The name of the shape currently chosen.
+ *
+ * The buttons are drawings, which is right — a cloud is quicker to recognise
+ * drawn than spelled — but it leaves the control unable to say what it is set
+ * to. Naming the pick in the caption puts the word back without putting it in
+ * five buttons, and reaches a touchscreen, which never sees a tooltip.
+ */
+const shapeLabel = (value: WordShape) =>
+  WORD_SHAPE_OPTIONS.find((option) => option.value === value)?.label ?? "";
 
 const SHAPED_MATCH_ROWS = 6;
 const CHOICE_ROW_HEIGHT_MM = 30;
@@ -499,7 +510,13 @@ export function PatternWorksheet({
   return (
     <div className="flex flex-col gap-6">
       {/* ---- Controls (screen only) ---- */}
-      <div className="flex flex-wrap items-end justify-center gap-x-8 gap-y-4 print:hidden">
+      <WorksheetToolbar
+        // Not offered on the reading sheet: it prints every pattern in a fixed
+        // order, so a reshuffle would change nothing a teacher can see.
+        onNewSheet={
+          kind === "fluency" ? undefined : () => setSheetSeed(randomSheetSeed())
+        }
+      >
         {!asksForTheVowel && options.length > 1 && (
           <SegmentedToggle
             caption={set.caption}
@@ -516,8 +533,8 @@ export function PatternWorksheet({
           kind === "vowel" ||
           kind === "fluency") && (
           <SegmentedToggle
-            caption="Shape"
-            size="xs"
+            caption={`Shape · ${shapeLabel(shape)}`}
+            size="icon"
             value={shape}
             onChange={setShape}
             options={SHAPE_OPTIONS_WITH_ICONS}
@@ -545,41 +562,13 @@ export function PatternWorksheet({
         )}
 
         {kind === "vowel" && (
-          <label className="flex h-12 cursor-pointer items-center gap-2.5 rounded-full border px-5 text-sm font-medium">
-            <Checkbox
-              checked={includeOo}
-              onCheckedChange={(next) => setIncludeOo(next === true)}
-            />
-            Include oo
-          </label>
+          <ToolbarCheckbox
+            checked={includeOo}
+            onChange={setIncludeOo}
+            label="Include oo"
+          />
         )}
-
-        {/* Not offered on the reading sheet: it prints every pattern in a
-            fixed order, so a reshuffle would change nothing a teacher can
-            see. */}
-        {kind !== "fluency" && (
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => setSheetSeed(randomSheetSeed())}
-          className="h-12 px-5"
-        >
-          <Shuffle aria-hidden />
-          New sheet
-        </Button>
-        )}
-
-        <Button
-          type="button"
-          size="lg"
-          onClick={() => window.print()}
-          className="h-12 px-5"
-        >
-          <Printer aria-hidden />
-          Print worksheet
-        </Button>
-      </div>
+      </WorksheetToolbar>
 
       {isEmpty ? (
         <p className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">
@@ -1320,8 +1309,11 @@ function FluencyFamilies({
               <SoundButton
                 text={word.text}
                 label={`Say ${word.text}`}
-                size="xs"
-                className="print:hidden"
+                size="md"
+                // Clear of the line that closes the row. The margin goes on
+                // the button rather than the row so it leaves with it: the
+                // button is screen-only, and so is the space it asks for.
+                className="mb-1 print:hidden"
               />
             </span>
           ))}

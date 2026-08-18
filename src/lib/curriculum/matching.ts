@@ -41,15 +41,17 @@ export const MATCH_PATTERNS = ["circle", "colour"] as const;
 
 export type MatchPattern = (typeof MATCH_PATTERNS)[number];
 
+// Named as on the choosing sheet, which offers the same choice: one word for
+// one thing, wherever a sheet asks how an answer gets marked.
 export const MATCH_PATTERN_OPTIONS = [
   {
     value: "circle" as const,
-    label: "Circle it",
+    label: "Circle",
     description: "Children draw a circle around the matching letter",
   },
   {
     value: "colour" as const,
-    label: "Colour it",
+    label: "Colour",
     description: "Every letter sits in a circle; children colour the matching one",
   },
 ];

@@ -1,16 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
-import { Printer } from "lucide-react";
+import { useState } from "react";
 
 import { ItemNav } from "@/components/curriculum/item-nav";
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { StepButton } from "@/components/curriculum/step-button";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
 import { WorksheetRow, type RowVariant } from "@/components/curriculum/worksheet-row";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { ToolbarCheckbox, WorksheetToolbar } from "@/components/curriculum/worksheet-toolbar";
 import { useLetterDots } from "@/hooks/use-letter-dots";
 import { useLabelMode } from "@/hooks/use-preferences";
 import { itemLabel, labelModeOptions } from "@/lib/curriculum/display";
@@ -128,7 +125,6 @@ export function Worksheet({ unit, items }: WorksheetProps) {
   );
   const [style, setStyle] = useState<WorksheetStyle>("tracing");
   const [printWholeAlphabet, setPrintWholeAlphabet] = useState(false);
-  const printAllId = useId();
 
   const { mode, setMode } = useLabelMode();
   const modeOptions = labelModeOptions(unit.kind, items);
@@ -150,7 +146,11 @@ export function Worksheet({ unit, items }: WorksheetProps) {
     <div className="flex flex-col gap-6">
       {/* ---- Controls (screen only) ---- */}
       <div className="flex flex-col gap-5 print:hidden">
-        <div className="flex flex-wrap items-end justify-center gap-x-8 gap-y-4">
+        <WorksheetToolbar
+          printLabel={
+            printWholeAlphabet ? `Print all ${items.length} sheets` : undefined
+          }
+        >
           <SegmentedToggle
             caption="Letters"
             value={activeMode}
@@ -164,34 +164,14 @@ export function Worksheet({ unit, items }: WorksheetProps) {
             options={WORKSHEET_STYLE_OPTIONS}
           />
 
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              size="lg"
-              onClick={() => window.print()}
-              className="h-12 px-5"
-            >
-              <Printer aria-hidden />
-              {printWholeAlphabet
-                ? `Print all ${items.length} sheets`
-                : "Print worksheet"}
-            </Button>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id={printAllId}
-                checked={printWholeAlphabet}
-                onCheckedChange={(checked) =>
-                  setPrintWholeAlphabet(checked === true)
-                }
-                className="size-5"
-              />
-              <Label htmlFor={printAllId} className="font-letter text-base">
-                Aa – Zz
-              </Label>
-            </div>
-          </div>
-        </div>
+          {/* What Print takes with it, so it sits with the settings rather
+              than beside the button it changes. */}
+          <ToolbarCheckbox
+            checked={printWholeAlphabet}
+            onChange={setPrintWholeAlphabet}
+            label="All letters"
+          />
+        </WorksheetToolbar>
 
         <ItemNav
           items={items}

@@ -1,9 +1,9 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
-import { Printer } from "lucide-react";
 
 import { AnswerMark } from "@/components/curriculum/answer-mark";
+import { WorksheetToolbar } from "@/components/curriculum/worksheet-toolbar";
 import {
   GapBox,
   useGapAnswers,
@@ -11,7 +11,6 @@ import {
 } from "@/components/curriculum/gap-box";
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
-import { Button } from "@/components/ui/button";
 import { useLabelMode } from "@/hooks/use-preferences";
 import { labelModeOptions } from "@/lib/curriculum/display";
 import {
@@ -378,7 +377,7 @@ export function MissingLettersWorksheet({
   return (
     <div className="flex flex-col gap-6">
       {/* ---- Controls (screen only) ---- */}
-      <div className="flex flex-wrap items-end justify-center gap-x-8 gap-y-4 print:hidden">
+      <WorksheetToolbar>
         <SegmentedToggle
           caption="Letters"
           value={labelMode}
@@ -393,16 +392,7 @@ export function MissingLettersWorksheet({
           onReselect={reroll}
           options={MISSING_MODE_OPTIONS}
         />
-        <Button
-          type="button"
-          size="lg"
-          onClick={() => window.print()}
-          className="h-12 px-5"
-        >
-          <Printer aria-hidden />
-          Print worksheet
-        </Button>
-      </div>
+      </WorksheetToolbar>
 
       {isEntire && entire ? (
         <WorksheetPage title={title} instruction={instruction}>

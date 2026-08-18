@@ -24,7 +24,7 @@ export const WORKSHEET_STYLE_OPTIONS = [
   },
   {
     value: "empty" as const,
-    label: "Empty",
+    label: "Blank",
     description: "Blank lines for the child to write on unaided",
   },
 ];
@@ -122,9 +122,15 @@ export function randomUnreservedInk(random: () => number): string {
  * its geometry from these constants — Unit 2's matching sheet draws its lines
  * that way — knows exactly how far the row's contents have been pushed along.
  * See components/curriculum/word-sound.
+ *
+ * The column and its gap together come to 12mm — a hair under the 48px button
+ * they hold, which therefore overhangs by about a pixel at each side. That is
+ * deliberate: a row's own contents are laid out to fill the page, so widening
+ * this column to fit the button exactly pushed the far end of a choosing row
+ * off the sheet.
  */
-export const WORD_SOUND_WIDTH = 9;
-export const WORD_SOUND_GAP = 3;
+export const WORD_SOUND_WIDTH = 10;
+export const WORD_SOUND_GAP = 2;
 export const WORD_SOUND_COLUMN = WORD_SOUND_WIDTH + WORD_SOUND_GAP;
 
 /** Matches the font stack applied by the `font-letter` utility. */

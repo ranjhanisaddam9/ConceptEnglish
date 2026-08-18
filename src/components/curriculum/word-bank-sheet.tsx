@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Printer } from "lucide-react";
 
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
-import { Button } from "@/components/ui/button";
+import { WorksheetToolbar } from "@/components/curriculum/worksheet-toolbar";
 import {
   WORD_BANK_LIST_OPTIONS,
   blendGroups,
@@ -127,24 +126,14 @@ export function WordBankSheet({ pictures }: { pictures: PictureEntry[] }) {
   return (
     <div className="flex flex-col gap-6">
       {/* ---- Controls (screen only) ---- */}
-      <div className="flex flex-wrap items-end justify-center gap-x-8 gap-y-4 print:hidden">
+      <WorksheetToolbar>
         <SegmentedToggle
           caption="List"
           value={list}
           onChange={setList}
           options={WORD_BANK_LIST_OPTIONS}
         />
-
-        <Button
-          type="button"
-          size="lg"
-          onClick={() => window.print()}
-          className="h-12 px-5"
-        >
-          <Printer aria-hidden />
-          Print list
-        </Button>
-      </div>
+      </WorksheetToolbar>
 
       <div
         data-worksheet-page

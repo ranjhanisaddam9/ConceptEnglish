@@ -100,7 +100,9 @@ export const PATTERN_SETS: Record<PatternSetId, PatternSet> = {
     ],
   },
   blends: {
-    caption: "Pattern",
+    // Not "Pattern": these cut the same blends three ways rather than naming
+    // three patterns, and two of the three are positions.
+    caption: "Group by",
     options: [
     {
       value: "blend",

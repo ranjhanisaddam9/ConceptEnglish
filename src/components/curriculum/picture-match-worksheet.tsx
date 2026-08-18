@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Printer, Shuffle } from "lucide-react";
 
 import {
   playAnswerSound,
@@ -10,6 +9,7 @@ import {
   stopStretchSound,
 } from "@/lib/curriculum/answer-sound";
 import { AnswerMark } from "@/components/curriculum/answer-mark";
+import { WorksheetToolbar } from "@/components/curriculum/worksheet-toolbar";
 import {
   MatchAnchor,
   MatchAnchorDot,
@@ -17,7 +17,6 @@ import {
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { WordSound } from "@/components/curriculum/word-sound";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
-import { Button } from "@/components/ui/button";
 import { useLabelMode } from "@/hooks/use-preferences";
 import { labelModeOptions } from "@/lib/curriculum/display";
 import {
@@ -376,7 +375,7 @@ export function PictureMatchWorksheet({
   return (
     <div className="flex flex-col gap-6">
       {/* ---- Controls (screen only) ---- */}
-      <div className="flex flex-wrap items-end justify-center gap-x-8 gap-y-4 print:hidden">
+      <WorksheetToolbar onNewSheet={() => setSheetSeed(randomSheetSeed())}>
         <SegmentedToggle
           caption="Letters"
           value={labelMode}
@@ -389,28 +388,7 @@ export function PictureMatchWorksheet({
           onChange={setPosition}
           options={CONSONANT_POSITION_OPTIONS}
         />
-
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => setSheetSeed(randomSheetSeed())}
-          className="h-12 px-5"
-        >
-          <Shuffle aria-hidden />
-          New sheet
-        </Button>
-
-        <Button
-          type="button"
-          size="lg"
-          onClick={() => window.print()}
-          className="h-12 px-5"
-        >
-          <Printer aria-hidden />
-          Print worksheet
-        </Button>
-      </div>
+      </WorksheetToolbar>
 
       {sheet.rows.length === 0 ? (
         <p className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">

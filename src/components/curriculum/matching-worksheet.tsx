@@ -1,15 +1,12 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
-import { Printer } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { playAnswerSound } from "@/lib/curriculum/answer-sound";
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { StepButton } from "@/components/curriculum/step-button";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { ToolbarCheckbox, WorksheetToolbar } from "@/components/curriculum/worksheet-toolbar";
 import {
   MATCH_DIRECTION_OPTIONS,
   MATCH_LAYOUT,
@@ -196,7 +193,6 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
   const [direction, setDirection] = useState<MatchDirection>("upper-to-lower");
   const [pattern, setPattern] = useState<MatchPattern>("circle");
   const [imageOnly, setImageOnly] = useState(false);
-  const imageOnlyId = useId();
   const [order, setOrder] = useState<MatchOrder>("sequential");
   const [seed, setSeed] = useState(INITIAL_SEED);
   const [pageIndex, setPageIndex] = useState(0);
@@ -229,7 +225,11 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* ---- Controls (screen only) ---- */}
-      <div className="flex flex-wrap items-end justify-center gap-x-8 gap-y-4 print:hidden">
+      <WorksheetToolbar
+        printLabel={
+          pages.length > 1 ? `Print all ${pages.length} pages` : undefined
+        }
+      >
         <SegmentedToggle
           caption="Match"
           value={direction}
@@ -237,7 +237,7 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
           options={MATCH_DIRECTION_OPTIONS}
         />
         <SegmentedToggle
-          caption="Pattern"
+          caption="Mark"
           value={pattern}
           onChange={setPattern}
           options={MATCH_PATTERN_OPTIONS}
@@ -245,34 +245,19 @@ export function MatchingWorksheet({ unit, items }: MatchingWorksheetProps) {
 
         {/* Sits beside Pattern because it changes the same thing — the shape
             of a question — but combines with either marking style. */}
-        <div className="flex h-12 items-center gap-2">
-          <Checkbox
-            id={imageOnlyId}
-            checked={imageOnly}
-            onCheckedChange={(checked) => setImageOnly(checked === true)}
-            className="size-5"
-          />
-          <Label htmlFor={imageOnlyId} className="text-base">
-            Image only
-          </Label>
-        </div>
+        <ToolbarCheckbox
+          checked={imageOnly}
+          onChange={setImageOnly}
+          label="Image only"
+        />
+
         <SegmentedToggle
           caption="Order"
           value={order}
           onChange={handleOrderChange}
           options={MATCH_ORDER_OPTIONS}
         />
-
-        <Button
-          type="button"
-          size="lg"
-          onClick={() => window.print()}
-          className="h-12 px-5"
-        >
-          <Printer aria-hidden />
-          {pages.length > 1 ? `Print all ${pages.length} pages` : "Print worksheet"}
-        </Button>
-      </div>
+      </WorksheetToolbar>
 
       {pages.length === 0 ? (
         <p className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">

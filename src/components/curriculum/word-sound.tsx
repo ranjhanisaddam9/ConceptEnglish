@@ -22,12 +22,10 @@ import { cn } from "@/lib/utils";
 
 export function WordSound({
   word,
-  size = "sm",
   className,
 }: {
   /** The word to say, spelled as it is written. */
   word: string;
-  size?: "xs" | "sm";
   className?: string;
 }) {
   return (
@@ -41,7 +39,7 @@ export function WordSound({
         marginRight: `${WORD_SOUND_GAP}mm`,
       }}
     >
-      <SoundButton text={word} label={`Say ${word}`} size={size} />
+      <SoundButton text={word} label={`Say ${word}`} size="md" />
     </span>
   );
 }

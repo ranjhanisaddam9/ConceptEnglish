@@ -1,9 +1,9 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
-import { Printer, Shuffle } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { AnswerMark } from "@/components/curriculum/answer-mark";
+import { ToolbarCheckbox, WorksheetToolbar } from "@/components/curriculum/worksheet-toolbar";
 import {
   GAP_BOX_PADDING,
   GapBox,
@@ -13,9 +13,6 @@ import {
 import { SegmentedToggle } from "@/components/curriculum/segmented-toggle";
 import { WordSound } from "@/components/curriculum/word-sound";
 import { WorksheetPage } from "@/components/curriculum/worksheet-page";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useLabelMode } from "@/hooks/use-preferences";
 import { labelModeOptions } from "@/lib/curriculum/display";
 import {
@@ -259,7 +256,6 @@ export function WritingConsonantsWorksheet({
   const [sheetSeed, setSheetSeed] = useState(seed);
   const [position, setPosition] = useState<ConsonantPosition>("starting");
   const [letterOnly, setLetterOnly] = useState(false);
-  const letterOnlyId = useId();
 
   const { mode, setMode } = useLabelMode();
   // "Both" is meaningless here: a word is spelled in one case or the other,
@@ -294,7 +290,7 @@ export function WritingConsonantsWorksheet({
   return (
     <div className="flex flex-col gap-6">
       {/* ---- Controls (screen only) ---- */}
-      <div className="flex flex-wrap items-end justify-center gap-x-8 gap-y-4 print:hidden">
+      <WorksheetToolbar onNewSheet={() => setSheetSeed(randomSheetSeed())}>
         <SegmentedToggle
           caption="Letters"
           value={labelMode}
@@ -308,39 +304,12 @@ export function WritingConsonantsWorksheet({
           options={CONSONANT_POSITION_OPTIONS}
         />
 
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => setSheetSeed(randomSheetSeed())}
-          className="h-12 px-5"
-        >
-          <Shuffle aria-hidden />
-          New sheet
-        </Button>
-
-        <div className="flex h-12 items-center gap-2">
-          <Checkbox
-            id={letterOnlyId}
-            checked={letterOnly}
-            onCheckedChange={(checked) => setLetterOnly(checked === true)}
-            className="size-5"
-          />
-          <Label htmlFor={letterOnlyId} className="text-base">
-            Letter only
-          </Label>
-        </div>
-
-        <Button
-          type="button"
-          size="lg"
-          onClick={() => window.print()}
-          className="h-12 px-5"
-        >
-          <Printer aria-hidden />
-          Print worksheet
-        </Button>
-      </div>
+        <ToolbarCheckbox
+          checked={letterOnly}
+          onChange={setLetterOnly}
+          label="Letter only"
+        />
+      </WorksheetToolbar>
 
       {rows.length === 0 ? (
         <p className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">

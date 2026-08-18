@@ -40,11 +40,17 @@ export interface SegmentedToggleProps<T extends string> {
   className?: string;
 }
 
+/**
+ * Width varies; height does not. A single letter or a drawing needs no width
+ * — a wide button around it is just air — but 48px tall is the floor for
+ * anything a finger has to land on, so every size keeps it.
+ */
 const SIZE_CLASSES = {
-  /** For a single letter or a drawing, where a wide button is just air. */
-  xs: "h-9 min-w-9 px-2 text-sm",
-  sm: "h-10 min-w-16 px-4 text-sm sm:min-w-24",
+  xs: "h-12 min-w-12 px-2 text-sm",
+  sm: "h-12 min-w-16 px-4 text-sm sm:min-w-24",
   lg: "h-12 min-w-20 px-4 text-base sm:min-w-28 sm:px-5",
+  /** For a drawing that has to be legible, not merely present. */
+  icon: "h-14 min-w-14 px-2",
 } as const;
 
 export function SegmentedToggle<T extends string>({
