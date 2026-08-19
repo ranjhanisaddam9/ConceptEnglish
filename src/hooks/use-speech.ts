@@ -29,6 +29,14 @@ export interface SpeechSource {
 
 export interface UseSpeechResult {
   speak: () => void;
+  /**
+   * Cuts playback short.
+   *
+   * Safe to call when nothing is playing. Lets a caller offer a stop control
+   * for something long — a whole story, say — where waiting it out is not a
+   * reasonable ask.
+   */
+  stop: () => void;
   isSpeaking: boolean;
   /** False when the browser can neither play the file nor synthesise speech. */
   isSupported: boolean;
@@ -172,5 +180,5 @@ export function useSpeech({ text, audioUrl }: SpeechSource): UseSpeechResult {
     watchdogRef.current = setTimeout(finish, estimatedDurationMs(spoken));
   }, [accent, audioUrl, clearWatchdog, isSpeaking, isSupported, stop, text]);
 
-  return { speak, isSpeaking, isSupported };
+  return { speak, stop, isSpeaking, isSupported };
 }
