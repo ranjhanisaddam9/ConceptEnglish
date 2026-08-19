@@ -1,17 +1,16 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Settings, Sparkles } from "lucide-react";
 
 import { SoundButton } from "@/components/curriculum/sound-button";
+import { StoryPicture } from "@/components/story/story-picture";
 import { useStoryCast } from "@/hooks/use-preferences";
 import {
   castVariant,
   displayName,
   fillStanzas,
   spokenStory,
-  storyImagePath,
 } from "@/lib/story/placeholders";
 import type { Story } from "@/lib/story/types";
 
@@ -44,10 +43,10 @@ export function StoryReader({ story }: { story: Story }) {
       {/* The picture matching this pairing of characters. Four exist per
           story; `castVariant` picks the one that matches. */}
       <div className="relative aspect-video w-full overflow-hidden rounded-3xl border-2 bg-muted">
-        <Image
-          src={storyImagePath(story.number, cast)}
+        <StoryPicture
+          storyNumber={story.number}
+          cast={cast}
           alt={`${story.title} — ${names}`}
-          fill
           // The reader is the point of the page, so this is the LCP image.
           priority
           sizes="(min-width: 1024px) 56rem, 100vw"

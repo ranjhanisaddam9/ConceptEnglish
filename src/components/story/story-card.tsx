@@ -1,11 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Lock } from "lucide-react";
 
+import { StoryPicture } from "@/components/story/story-picture";
 import { useStoryCast } from "@/hooks/use-preferences";
-import { storyImagePath } from "@/lib/story/placeholders";
 import { isReadable } from "@/lib/story/stories";
 import { UNIT_ACCENTS } from "@/lib/curriculum/unit-face";
 import type { Story } from "@/lib/story/types";
@@ -30,13 +29,12 @@ export function StoryCard({ story }: { story: Story }) {
     <>
       <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-2xl bg-[var(--unit-tint)] sm:w-44">
         {readable ? (
-          <Image
-            src={storyImagePath(story.number, cast)}
+          <StoryPicture
+            storyNumber={story.number}
+            cast={cast}
             alt=""
-            fill
             sizes="(min-width: 640px) 11rem, 100vw"
             className="object-cover"
-            aria-hidden
           />
         ) : (
           <div className="grid size-full place-items-center text-[var(--unit-ink)]">
