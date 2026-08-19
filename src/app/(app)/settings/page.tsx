@@ -1,8 +1,9 @@
+import { StoryCharactersSetting } from "@/components/settings/story-characters-setting";
 import { VoiceSetting } from "@/components/settings/voice-setting";
 
 export const metadata = {
   title: "Settings · Concept English",
-  description: "Voice and display settings for the curriculum.",
+  description: "Voice, characters and display settings for the curriculum.",
 };
 
 export default function SettingsPage() {
@@ -17,6 +18,7 @@ export default function SettingsPage() {
 
       <div className="flex flex-col gap-5">
         <VoiceSetting />
+        <StoryCharactersSetting />
       </div>
     </main>
   );

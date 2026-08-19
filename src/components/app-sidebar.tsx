@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   ChevronRight,
   GraduationCap,
   LayoutDashboard,
@@ -28,6 +29,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { navUnitName, worksheetsFor } from "@/lib/curriculum/sheet-nav";
+import { STORIES, isReadable, storyLabel } from "@/lib/story/stories";
 import { unitAccent } from "@/lib/curriculum/unit-face";
 import type { Unit } from "@/lib/curriculum/types";
 import { cn } from "@/lib/utils";
@@ -188,6 +190,59 @@ export function AppSidebar({ units }: AppSidebarProps) {
                 )}
               </SidebarMenuItem>
 
+              {/* Stories, told about the characters set in Settings. Every
+                  one is listed so the shape of the set is visible, but only a
+                  story with a script is a link. */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Stories"
+                  isActive={isCurrent("/story")}
+                  className="h-10 rounded-xl font-medium"
+                >
+                  <Link href="/story">
+                    <NavIcon tint="violet">
+                      <BookOpen className="size-4" aria-hidden />
+                    </NavIcon>
+                    <span>Story</span>
+                  </Link>
+                </SidebarMenuButton>
+
+                <SidebarMenuSub>
+                  {STORIES.map((story) => {
+                    const href = `/story/${story.number}`;
+                    const label = storyLabel(story);
+
+                    if (!isReadable(story)) {
+                      return (
+                        <SidebarMenuSubItem key={story.number}>
+                          <span
+                            className="flex h-7 items-center gap-2 rounded-lg px-2 text-sm text-muted-foreground/60"
+                            title={`${label} — not written yet`}
+                          >
+                            <span className="truncate">{label}</span>
+                          </span>
+                        </SidebarMenuSubItem>
+                      );
+                    }
+
+                    return (
+                      <SidebarMenuSubItem key={story.number}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isCurrent(href)}
+                          className="rounded-lg"
+                        >
+                          <Link href={href}>
+                            <span className="truncate">{label}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    );
+                  })}
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+
               {/* Reference material, belonging to no single unit. */}
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -248,7 +303,7 @@ function NavIcon({
   tint,
   children,
 }: {
-  tint: "primary" | "blue" | "muted";
+  tint: "primary" | "blue" | "violet" | "muted";
   children: React.ReactNode;
 }) {
   return (
@@ -257,6 +312,7 @@ function NavIcon({
         "flex size-7 shrink-0 items-center justify-center rounded-lg",
         tint === "primary" && "bg-primary/15 text-primary",
         tint === "blue" && "bg-[var(--chart-2)]/15 text-[var(--chart-2)]",
+        tint === "violet" && "bg-[var(--chart-5)]/15 text-[var(--chart-5)]",
         tint === "muted" && "bg-muted text-muted-foreground",
       )}
       aria-hidden

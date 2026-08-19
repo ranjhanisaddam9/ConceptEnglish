@@ -1,9 +1,15 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 import { DEFAULT_ACCENT, isAccent, type Accent } from "@/lib/speech";
 import { LABEL_MODES, type LabelMode } from "@/lib/curriculum/types";
+import {
+  DEFAULT_GENDER,
+  isGender,
+  type Gender,
+  type StoryCast,
+} from "@/lib/story/types";
 
 /**
  * Per-device viewing preferences, persisted to localStorage.
@@ -84,6 +90,35 @@ export const accentPreference = createPreference<Accent>(
   isAccent,
 );
 
+/**
+ * The two characters every story is told about.
+ *
+ * Held as four separate string preferences rather than one JSON blob, because
+ * `useSyncExternalStore` needs `read` to return a stable value and a string
+ * is stable for free — a parsed object would be a new reference every read.
+ * They are recomposed into a `StoryCast` by `useStoryCast` below.
+ */
+const isName = (value: unknown): value is string => typeof value === "string";
+
+export const storyCastPreferences = {
+  c1: {
+    name: createPreference<string>("concept-english.story.c1-name", "", isName),
+    gender: createPreference<Gender>(
+      "concept-english.story.c1-gender",
+      DEFAULT_GENDER,
+      isGender,
+    ),
+  },
+  c2: {
+    name: createPreference<string>("concept-english.story.c2-name", "", isName),
+    gender: createPreference<Gender>(
+      "concept-english.story.c2-gender",
+      "female",
+      isGender,
+    ),
+  },
+} as const;
+
 function usePreference<T extends string>(preference: Preference<T>): T {
   return useSyncExternalStore(
     preference.subscribe,
@@ -104,4 +139,33 @@ export function useAccent() {
     accent: usePreference(accentPreference),
     setAccent: accentPreference.set,
   } as const;
+}
+
+/**
+ * The story cast as one object.
+ *
+ * Memoised so the identity only changes when a character actually changes;
+ * a story re-renders on every keystroke otherwise.
+ */
+export function useStoryCast(): StoryCast {
+  const c1Name = usePreference(storyCastPreferences.c1.name);
+  const c1Gender = usePreference(storyCastPreferences.c1.gender);
+  const c2Name = usePreference(storyCastPreferences.c2.name);
+  const c2Gender = usePreference(storyCastPreferences.c2.gender);
+
+  return useMemo(
+    () => ({
+      c1: { name: c1Name, gender: c1Gender },
+      c2: { name: c2Name, gender: c2Gender },
+    }),
+    [c1Name, c1Gender, c2Name, c2Gender],
+  );
+}
+
+/** Writes a whole cast at once, which is what the Save button does. */
+export function saveStoryCast(cast: StoryCast) {
+  storyCastPreferences.c1.name.set(cast.c1.name.trim());
+  storyCastPreferences.c1.gender.set(cast.c1.gender);
+  storyCastPreferences.c2.name.set(cast.c2.name.trim());
+  storyCastPreferences.c2.gender.set(cast.c2.gender);
 }
