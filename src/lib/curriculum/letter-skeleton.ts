@@ -84,6 +84,55 @@ const DROP_LOWEST_DOT = new Set(["i", "F"]);
 const DROP_LOWEST_EACH_SIDE = new Set(["A"]);
 
 /**
+ * Letters that drop the rightmost dot in each half of their height.
+ *
+ * A capital K finishes its arm and its leg on the same artefact: the medial
+ * axis flattens away from the stroke as it runs into the terminal, so the last
+ * dot of each sits wide of the line the child is meant to draw. The arm's
+ * final step turns through 29 degrees against the one before it, the leg's
+ * through 24 — both plainly off their own stroke.
+ *
+ * Split by height rather than by side, because both tips are on the right: one
+ * above the junction with the stem and one below it.
+ */
+const DROP_RIGHTMOST_EACH_HALF = new Set(["K", "k"]);
+
+/**
+ * Letters that lose a single dot to a flared terminal, and which end of the
+ * letter that dot sits at.
+ *
+ * The same artefact as DROP_LOWEST_DOT above, listed separately because these
+ * are only corrected when the letter stands alone. A capital P's stem swings
+ * right as it runs into its foot — 0 to 1.4mm out, having been dead straight
+ * the whole way down — and a capital R's leg flattens outwards on its last
+ * step. In a paired "Pp" or "Rr" the lowest and rightmost dots of the glyph
+ * belong to the lowercase letter instead, so the rule would take the wrong one.
+ */
+const DROP_ONE_TIP: Record<string, "lowest" | "rightmost"> = {
+  P: "lowest",
+  Q: "rightmost",
+  R: "rightmost",
+  f: "lowest",
+  p: "lowest",
+};
+
+/**
+ * Letters whose lowest dot is pulled back into line rather than dropped.
+ *
+ * An 'l' is a single stroke, and losing its last dot would leave it visibly
+ * shorter than the ascender beside it. The dot is wanted where the stroke
+ * would have put it, so it takes the x of the dot above it and keeps its own
+ * height. Single-letter glyphs only, for the same reason as DROP_ONE_TIP.
+ */
+const ALIGN_LOWEST_DOT = new Set(["l"]);
+
+/**
+ * How far either side of the advance width to look for the join between two
+ * letters' dots, in em.
+ */
+const LETTER_SPLIT_WINDOW = 0.25;
+
+/**
  * How far the right leg of a capital A is pulled back off its flare, in em.
  *
  * Where that leg meets the baseline the medial axis bends outwards into the
@@ -703,6 +752,108 @@ function withoutFeet(points: Point[], run: GlyphRun): Point[] {
   return points.filter((point) => !feet.has(point));
 }
 
+/**
+ * Drops the rightmost dot above and below the middle of a letter's height.
+ *
+ * The middle is taken from the dots themselves rather than from the ruling: it
+ * only has to fall between the two tips, and every letter this applies to has
+ * its junction near the middle of its own height.
+ */
+function withoutArmTips(points: Point[]): Point[] {
+  if (points.length === 0) return points;
+
+  const ys = points.map(([, y]) => y);
+  const middle = (Math.min(...ys) + Math.max(...ys)) / 2;
+
+  const rightmostOf = (half: Point[]) =>
+    half.reduce<Point | null>(
+      (widest, point) => (!widest || point[0] > widest[0] ? point : widest),
+      null,
+    );
+
+  const tips = new Set(
+    [
+      rightmostOf(points.filter(([, y]) => y < middle)),
+      rightmostOf(points.filter(([, y]) => y >= middle)),
+    ].filter((point): point is Point => point !== null),
+  );
+
+  return points.filter((point) => !tips.has(point));
+}
+
+/**
+ * Splits a glyph's dots into one group per letter.
+ *
+ * The advance width says roughly where one letter ends, but it cannot be
+ * trusted on its own: a flared terminal can reach past it, which is how the
+ * capital in a paired "Aa" keeps a foot the rule was meant to take. So the
+ * boundary is moved to the widest gap between dots near that mark, which is
+ * the blank column between the two letters wherever one exists.
+ *
+ * Only as good as that gap. Where a letter's own strokes are further apart
+ * than its neighbour is — "Aa" again, whose crossbar leaves a wider gap than
+ * the space beside it — this finds the wrong column, which is why the rules
+ * that have not been checked against a pair stay gated to single letters.
+ */
+function splitIntoLetters(points: Point[], runs: GlyphRun[]): Point[][] {
+  if (runs.length < 2) return [points];
+
+  const xs = [...new Set(points.map(([x]) => x))].sort((a, b) => a - b);
+
+  const cuts = runs.slice(0, -1).map((run) => {
+    let cut = run.to;
+    let widest = -1;
+
+    for (let i = 1; i < xs.length; i += 1) {
+      const middle = (xs[i - 1] + xs[i]) / 2;
+      if (Math.abs(middle - run.to) > LETTER_SPLIT_WINDOW * RASTER) continue;
+
+      const gap = xs[i] - xs[i - 1];
+      if (gap > widest) {
+        widest = gap;
+        cut = middle;
+      }
+    }
+
+    return cut;
+  });
+
+  return runs.map((_, index) => {
+    const from = index === 0 ? -Infinity : cuts[index - 1];
+    const to = index === runs.length - 1 ? Infinity : cuts[index];
+    return points.filter(([x]) => x >= from && x < to);
+  });
+}
+
+/**
+ * Squares the lowest dot up with the stroke above it.
+ *
+ * Only its x moves: the dot stays at the depth the tracing put it, so the
+ * stroke still reaches the same line, but it no longer leans out of it.
+ */
+function withAlignedTip(points: Point[]): Point[] {
+  const byDepth = [...points].sort((a, b) => b[1] - a[1]);
+  const [tip, above] = byDepth;
+  if (!tip || !above) return points;
+
+  return points.map((point): Point =>
+    point === tip ? [above[0], point[1]] : point,
+  );
+}
+
+/** Drops the single dot furthest down, or furthest right, of a letter. */
+function withoutTip(points: Point[], end: "lowest" | "rightmost"): Point[] {
+  const reach = (point: Point) => (end === "lowest" ? point[1] : point[0]);
+
+  const tip = points.reduce<Point | null>(
+    (furthest, point) =>
+      !furthest || reach(point) > reach(furthest) ? point : furthest,
+    null,
+  );
+
+  return tip ? points.filter((point) => point !== tip) : points;
+}
+
 function computeDots(request: SkeletonRequest): SkeletonDot[] {
   const width = RASTER * 3;
   const height = RASTER * 2;
@@ -776,9 +927,28 @@ function computeDots(request: SkeletonRequest): SkeletonDot[] {
   // and that letter's flared right foot sits outside its own advance — so the
   // rule finds one foot and not the other. Until a letter's dots can be told
   // apart from its neighbour's reliably, a pair is left alone.
+  // Checked against a pair, so it runs on each letter of one: the two letters
+  // of a "Kk" are far enough apart for splitIntoLetters to find the join.
+  if (runs.some((run) => DROP_RIGHTMOST_EACH_HALF.has(run.text))) {
+    const letters = splitIntoLetters(ordered, runs);
+    ordered = letters
+      .map((dots, index) =>
+        DROP_RIGHTMOST_EACH_HALF.has(runs[index].text)
+          ? withoutArmTips(dots)
+          : dots,
+      )
+      .flat();
+  }
+
   for (const run of runs) {
     if (runs.length === 1 && DROP_LOWEST_EACH_SIDE.has(run.text)) {
       ordered = withoutFeet(ordered, run);
+    }
+    if (runs.length === 1 && DROP_ONE_TIP[run.text]) {
+      ordered = withoutTip(ordered, DROP_ONE_TIP[run.text]);
+    }
+    if (runs.length === 1 && ALIGN_LOWEST_DOT.has(run.text)) {
+      ordered = withAlignedTip(ordered);
     }
   }
 
